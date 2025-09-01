@@ -46,7 +46,16 @@ export const logOutClient = () => {
 export const getChatlist = async () => {
     try {
         const res = await api.get("/chat/list");
-        
+
+        return res.data;
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+export const getChat = async (chatId) => {
+    try {
+        const res = await api.get(`/message/c/${chatId}`);
         return res.data;
     } catch (error) {
         console.log(error);

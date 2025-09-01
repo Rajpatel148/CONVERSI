@@ -2,10 +2,7 @@ import React from "react";
 import "./ChatBar.css";
 import Avatar from "@mui/material/Avatar";
 
-const ChatBar = ({ data }) => {
-    console.log(data);
-    
-
+const ChatBar = ({ data, activeChatId, setActiveChatId }) => {
     const isGroup = data?.isGroup;
     const name = isGroup
         ? data?.name || "Unnamed Group"
@@ -18,7 +15,15 @@ const ChatBar = ({ data }) => {
         : 0;
 
     return (
-        <div className="chat-bar">
+        <div
+            className="chat-bar"
+            onClick={() => setActiveChatId(data._id)}
+            style={{
+                backgroundColor:
+                    activeChatId === data._id && "rgba(10, 153, 67, 0.578)",
+                cursor: "pointer",
+            }}
+        >
             <div className="chat-bar-avatar">
                 <Avatar
                     src={avatarSrc}

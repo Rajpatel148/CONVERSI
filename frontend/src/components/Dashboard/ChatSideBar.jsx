@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Ellipsis, MessageCircle, Plus, Search, Settings } from "lucide-react";
 import ChatBar from "./ChatBar";
 import Box from "@mui/material/Box";
@@ -6,9 +6,23 @@ import "./ChatSideBar.css";
 import Avatar from "@mui/material/Avatar";
 import { useAuth } from "../../context/Authcotext";
 
-const ChatSideBar = ({ chats }) => {
+const ChatSideBar = ({ chats, activeChatId, setActiveChatId }) => {
     const { user } = useAuth();
+    const [search, setSearch] = useState("");
 
+    const filteredChats = chats.filter((chat) => {
+        const searchLower = search.toLowerCase();
+        // Group chat: match by name
+        if (chat.isGroup && chat.name?.toLowerCase().includes(searchLower))
+            return true;
+        // Direct chat: match any member's fullname
+        if (Array.isArray(chat.members)) {
+            return chat.members.some((member) =>
+                member.fullname?.toLowerCase().includes(searchLower)
+            );
+        }
+        return false;
+    });
     return (
         <div className="chatSideBar">
             <div className="1">
@@ -35,14 +49,21 @@ const ChatSideBar = ({ chats }) => {
                         <input
                             type="text"
                             placeholder="Search conversations..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
                     </Box>
                 </div>
                 {/* Chat list */}
                 <div className="chat-list">
-                    {Array.isArray(chats) &&
-                        chats.map((chat) => (
-                            <ChatBar key={chat._id} data={chat} />
+                    {Array.isArray(filteredChats) &&
+                        filteredChats.map((chat) => (
+                            <ChatBar
+                                key={chat._id}
+                                data={chat}
+                                activeChatId={activeChatId}
+                                setActiveChatId={setActiveChatId}
+                            />
                         ))}
                 </div>
             </div>
@@ -50,7 +71,7 @@ const ChatSideBar = ({ chats }) => {
             <div className="user-profile">
                 <div className="profile">
                     <Avatar
-                        src={user?.avatar || "demo.jpeg"}
+                        src={user?.avatar || null}
                         alt="User Avatar"
                         sx={{
                             width: "56px", // size of avatar

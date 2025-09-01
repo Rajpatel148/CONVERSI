@@ -57,7 +57,7 @@ const Dashboard = () => {
                         borderRight: { md: "1px solid #E0E0E0" },
                     }}
                 >
-                    <ChatSideBar chats={chats}/>
+                    <ChatSideBar chats={chats} activeChatId={activeChatId} setActiveChatId={setActiveChatId} />
                 </Box>
 
                 {/* Chat Window */}

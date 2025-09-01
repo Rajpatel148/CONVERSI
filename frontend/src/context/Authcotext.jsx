@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import {
+    getChat,
     getChatlist,
     loginRequest,
     logOutClient,
@@ -22,10 +23,9 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(
         () => localStorage.getItem("token") || null
     );
-    const [loading, setLoading] = useState(false);
+    // const [loading, setLoading] = useState(false);
 
     const login = async (data) => {
-        setLoading(true);
         try {
             const { token: newToken, user: newUser } = await loginRequest(data);
             if (newToken) {
@@ -37,16 +37,13 @@ export const AuthProvider = ({ children }) => {
                 setUser(newUser);
                 localStorage.setItem("user", JSON.stringify(newUser));
             }
-            setLoading(false);
             return { success: true, newUser, newToken };
         } catch (error) {
-            setLoading(false);
             throw error;
         }
     };
 
     const signUp = async (data) => {
-        setLoading(true);
         try {
             const { user: newUser, token: newToken } = await signUpRequest(
                 data
@@ -60,10 +57,8 @@ export const AuthProvider = ({ children }) => {
                 setUser(newUser);
                 localStorage.setItem("user", JSON.stringify(newUser));
             }
-            setLoading(false);
             return { success: true, newUser, newToken };
         } catch (error) {
-            setLoading(false);
             throw error;
         }
     };
@@ -76,22 +71,42 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    const myChatlist =async ()=>{
-        setLoading(true);
+    const myChatlist = async () => {
         try {
             const res = await getChatlist();
-            setLoading(false);
             return res;
         } catch (error) {
-            setLoading(false);
             throw error;
         }
-    }
+    };
+
+    const chat = async (chatId) => {
+        // setLoading(true);
+        try {
+            const res = await getChat(chatId);
+            // setLoading(false);
+            return res;
+        } catch (error) {
+            // setLoading(false);
+            throw error;
+        }
+    };
+
+    const contextValue = useMemo(
+        () => ({
+            user,
+            token,
+            login,
+            logout,
+            signUp,
+            myChatlist,
+            chat,
+        }),
+        [user, token, login, logout, signUp, myChatlist, chat]
+    );
 
     return (
-        <AuthContext.Provider
-            value={{ user, token, loading, login, logout, signUp ,myChatlist }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

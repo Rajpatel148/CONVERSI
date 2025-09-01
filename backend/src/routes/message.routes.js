@@ -10,7 +10,7 @@ const router = Router();
 router.use(verifyJWT);
 // Routes
 router.route("/send").post(sendMessage);
-router.route("/c/:chatId").post(getAllMessage);
+router.route("/c/:chatId").get(getAllMessage);
 router.route("/delete").post(deleteMessage);
 
 export default router;

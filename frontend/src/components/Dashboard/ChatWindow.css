@@ -58,7 +58,10 @@
 
 /* Chat input */
 .chat-input{
-    width: 100%;
+    position: absolute;
+    bottom: 0;
+    /* right: 0; */
+    width: 70%;
     height: fit-content;
     display: flex;
     justify-content: start;
