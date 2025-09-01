@@ -1,0 +1,77 @@
+.authContainer {
+    display: flex;
+    justify-content: center;
+}
+.auth {
+    background: white;
+    width: 32rem;
+    height: fit-content;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0px 0px 10 black;
+}
+.auth h1 {
+    text-align: center;
+    font-size: 2.25rem;
+}
+.auth p {
+    text-align: center;
+    font-size: 0.95rem;
+    color: rgba(0, 0, 0, 0.8);
+    padding-bottom: 1rem;
+}
+.authToggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+.authToggle button {
+    outline: none;
+    border: none;
+    background-color: #fff;
+    margin: 0.5rem;
+    padding: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.authToggle .active {
+    background-color: #d3f1df;
+    border-radius: 5px;
+    color: rgba(0, 128, 0, 0.705);
+}
+.signInForm,
+.signUpForm {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    gap: 5px;
+    /* font-size: 0.85rem; */
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.845);
+}
+input {
+    padding: 8px;
+    border: 1px solid #c1c3c2;
+    border-radius: 5px;
+    font-weight: 400;
+}
+.submit {
+    border: none;
+    outline: none;
+    color: white;
+    background-color: green;
+    padding: 10px;
+    font-weight: 500;
+    border-radius: 5px;
+    margin-top: 0.5rem;
+}
+.toggleText {
+    padding: none !important;
+    margin: none !important;
+    margin-top: 0.3rem;
+}
+.toggleLink{
+    cursor: pointer;
+    text-decoration: underline;
+    color: rgba(0, 128, 0, 0.77);
+}

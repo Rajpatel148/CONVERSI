@@ -1,0 +1,129 @@
+.chatSideBar {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-left: 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chat-list::-webkit-scrollbar {
+  display: none;
+}
+.chat-header {
+    width: 100%;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 1rem;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.header-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.header-logo .logo {
+    /* width: 2.2rem; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 7px;
+    border-radius: 8px;
+    background-color: rgba(0, 128, 0, 0.705);
+    margin-right: 0.45rem;
+}
+.header-logo h2 {
+    font-size: 1.35rem;
+    color: rgba(0, 0, 0, 0.743);
+}
+.header-btns {
+    display: flex;
+    gap: 0.25rem;
+}
+.header-btns button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    outline: none;
+    background: none;
+    padding: 5px;
+    border-radius: 5px;
+    &:hover {
+        background-color: rgb(211 241 223);
+        color: rgba(0, 128, 0, 0.705);
+    }
+}
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid #e0e0e0;
+    padding-left: 10px;
+    border-radius: 5px;
+}
+.search-bar:hover,
+.search-bar:focus-within {
+    box-shadow: 0 0 0 3px rgb(211 241 223);
+}
+.search-bar input {
+    border: none;
+    outline: none;
+}
+
+/* User profile */
+.user-profile {
+    height: 12vh;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+}
+.user-profile .profile {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 0.5rem;
+}
+.info {
+    text-transform: capitalize;
+}
+.info span {
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.619);
+}
+.more-options {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    outline: none;
+    background: none;
+    padding: 5px;
+    border-radius: 5px;
+    &:hover {
+        background-color: rgb(211 241 223);
+        color: rgba(0, 128, 0, 0.705);
+    }
+}
+@media (max-width: 900px) {
+    .chat-list {
+        max-height: 30vh;
+    }
+}

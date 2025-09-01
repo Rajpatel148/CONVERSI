@@ -1,0 +1,29 @@
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+
+const app = express();
+
+//! Middleware for upcoming data by many ways
+app.use(express.json()); //data coming from json file or formate
+app.use(express.urlencoded({ extended: true })); //data coming from URL
+app.use(express.static("public"));
+app.use(cookieParser());
+app.use(
+    cors({
+        origin: "http://localhost:5173",
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE"],
+    })
+);
+
+//!Routes
+import userRouter from "./routes/user.routes.js";
+import messageRouter from "./routes/message.routes.js";
+import chatRouter from "./routes/chat.routes.js";
+
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/message", messageRouter);
+app.use("/api/v1/chat", chatRouter);
+
+export { app };

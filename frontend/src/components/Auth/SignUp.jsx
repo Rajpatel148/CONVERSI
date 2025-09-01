@@ -1,0 +1,100 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/Authcotext.jsx";
+
+
+const SignUp = ({ isSignIn, setIsSignIn }) => {
+    const navigate = useNavigate();
+    const { signUp } = useAuth();
+
+    const [formData, setFormData] = useState({
+        username: "",
+        fullname: "",
+        email: "",
+        password: "",
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        // Handle form submission logic here
+
+        try {
+            const res = await signUp(formData);
+            if (res.success) {
+                navigate("/dashboard");
+            }
+        } catch (error) {
+            console.log(error);
+        }
+        // Reset form fields
+        setFormData({
+            username: "",
+            fullname: "",
+            email: "",
+            password: "",
+        });
+    };
+    return (
+        <form className="signUpForm">
+            <label htmlFor="username">Username</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Enter your username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+            />
+            <label htmlFor="fullname">Full Name</label>
+            <input
+                type="text"
+                id="fullname"
+                name="fullname"
+                placeholder="Enter your name"
+                value={formData.fullname}
+                onChange={handleChange}
+                required
+            />
+            <label htmlFor="email">Email</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+            />
+            <label htmlFor="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+            />
+            <button type="submit" className="submit" onClick={handleSubmit}>
+                Create Account
+            </button>
+            <p className="toggleText">
+                Already have an account?{" "}
+                <span className="toggleLink" onClick={() => setIsSignIn(true)}>
+                    Sign In
+                </span>
+            </p>
+        </form>
+    );
+};
+
+export default SignUp;
