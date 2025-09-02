@@ -55,13 +55,28 @@
      background-color:rgba(0, 128, 0, 0.705);
      color: white;
 }
-
+.chat-tools{
+    height: 1rem;
+    width: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+.chat-tools button{
+    border: none;
+    outline: none;
+    background: none;
+    &:hover{
+        transform: scale(1.1);
+    }
+}
 /* Chat input */
 .chat-input{
     position: absolute;
     bottom: 0;
     /* right: 0; */
-    width: 70%;
+    width: 75%;
     height: fit-content;
     display: flex;
     justify-content: start;
@@ -112,5 +127,10 @@
     border-radius: 5px;
     &:hover {
         background-color: rgba(0, 128, 0, 0.877) ;
+    }
+}
+@media (max-width: 900px) {
+    .chat-input{
+        width: 100%;
     }
 }

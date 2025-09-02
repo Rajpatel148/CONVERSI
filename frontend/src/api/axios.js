@@ -61,4 +61,22 @@ export const getChat = async (chatId) => {
         console.log(error);
     }
 };
+
+export const sendMsg = async (msgData) => {
+    try {
+        const res = await api.post("/message/send", msgData);
+        return res.data;
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+export const deleteMsg = async(msgData)=>{
+    try {
+        const res = await api.post("/message/delete",msgData);
+        return res.data;
+    } catch (error) {
+        console.log(error);
+    }
+}
 export default api;

@@ -1,15 +1,13 @@
 import React from "react";
 import Avatar from "@mui/material/Avatar";
 import { EllipsisVertical, Phone, Video } from "lucide-react";
-import { useAuth } from "../../context/Authcotext";
 
-const ChatHeader = () => {
-    const { user } = useAuth();
+const ChatHeader = ({ data }) => {
     return (
         <div className="chat-window-header">
             <div className="header-profile">
                 <Avatar
-                    src={user?.avatar}
+                    src={data?.avatar || ""}
                     alt="Profile"
                     sx={{ width: "50px", height: "50px", objectFit: "cover" }}
                 />
@@ -19,9 +17,17 @@ const ChatHeader = () => {
                             textTransform: "capitalize",
                         }}
                     >
-                        {user.fullname}
+                        {data?.isGroup
+                            ? data?.name
+                            : data?.members?.[0]?.fullname || "Unknown User"}
                     </h4>
-                    <p>{user.isOnline ? "Online":"Offline"}</p>
+                    <p>
+                        {data?.isGroup
+                            ? ""
+                            : data?.members[0].isOnline
+                            ? "Online"
+                            : "Offline"}
+                    </p>
                 </div>
             </div>
             <div className="header-btns">

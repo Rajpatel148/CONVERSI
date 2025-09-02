@@ -1,9 +1,11 @@
 import { createContext, useContext, useMemo, useState } from "react";
 import {
+    deleteMsg,
     getChat,
     getChatlist,
     loginRequest,
     logOutClient,
+    sendMsg,
     setAuthToken,
     signUpRequest,
 } from "../api/axios";
@@ -92,6 +94,22 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const send = async (msgData) => {
+        try {
+            const res = await sendMsg(msgData);
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const deleteMessage = async (msgData) => {
+        try {
+            const res = await deleteMsg(msgData);
+            
+        } catch (error) {
+            throw error;
+        }
+    };
     const contextValue = useMemo(
         () => ({
             user,
@@ -101,8 +119,20 @@ export const AuthProvider = ({ children }) => {
             signUp,
             myChatlist,
             chat,
+            send,
+            deleteMessage,
         }),
-        [user, token, login, logout, signUp, myChatlist, chat]
+        [
+            user,
+            token,
+            login,
+            logout,
+            signUp,
+            myChatlist,
+            chat,
+            send,
+            deleteMessage,
+        ]
     );
 
     return (

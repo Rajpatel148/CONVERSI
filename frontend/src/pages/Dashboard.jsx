@@ -69,7 +69,7 @@ const Dashboard = () => {
                     }}
                 >
                     {activeChatId ? (
-                        <ChatWindow chatId={activeChatId} />
+                        <ChatWindow chatId={activeChatId} chatUser={chats} />
                     ) : (
                         <Stack
                             alignItems="center"

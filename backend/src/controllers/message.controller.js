@@ -19,7 +19,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
         chatId,
         text,
         imageUrl,
-        seenBy: [senderId],
+        seenBy: [{ user: senderId }],
     });
 
     if (!newMessage) {
@@ -84,7 +84,7 @@ export const deleteMessage = asyncHandler(async (req, res) => {
 
     await message.save();
     //send response
-    return res.status(200).json(
-        new ApiResponse(200,{},"Message Deleted successfully")
-    )
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Message Deleted successfully"));
 });
