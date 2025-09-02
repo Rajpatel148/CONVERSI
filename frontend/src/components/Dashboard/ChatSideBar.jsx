@@ -74,15 +74,15 @@ const ChatSideBar = ({ chats, activeChatId, setActiveChatId }) => {
                         src={user?.avatar || null}
                         alt="User Avatar"
                         sx={{
-                            width: "56px", // size of avatar
+                            width: "56px",
                             height: "56px",
-                            objectFit: "cover", // ensures image fills the circle}} />
+                            objectFit: "cover",
                         }}
                     />
                     <p className="info">
-                        {user.fullname}
+                        {user?.fullname || "Unknown User"}
                         <br />
-                        <span>{user.isOnline ? "Online" : "Offline"}</span>
+                        <span>{user?.isOnline ? "Online" : "Offline"}</span>
                     </p>
                 </div>
                 <button className="more-options">

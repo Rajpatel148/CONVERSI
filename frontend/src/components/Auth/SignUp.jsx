@@ -5,13 +5,14 @@ import { useAuth } from "../../context/Authcotext.jsx";
 
 const SignUp = ({ isSignIn, setIsSignIn }) => {
     const navigate = useNavigate();
-    const { signUp } = useAuth();
+    const { signUp , uploadAvatar } = useAuth();
 
     const [formData, setFormData] = useState({
         username: "",
         fullname: "",
         email: "",
         password: "",
+        avatar: null,
     });
 
     const handleChange = (e) => {
@@ -42,8 +43,21 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
             password: "",
         });
     };
+
+    const handleUpload = async (e) =>{
+        const file  = e.target.files[0];
+        if(!file) return;
+
+        const avatarUrl = await uploadAvatar(file);
+        setFormData((prevData) => ({
+            ...prevData,
+            avatar: avatarUrl,
+        }));
+    }
     return (
         <form className="signUpForm">
+            <label htmlFor="avatar">Avatar</label>
+            <input type="file" id="avatar" name="avatar" accept="image/*" onChange={handleUpload} required/>
             <label htmlFor="username">Username</label>
             <input
                 type="text"

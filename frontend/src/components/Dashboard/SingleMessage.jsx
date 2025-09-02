@@ -8,7 +8,7 @@ const SingleMessage = ({ msg, user, fetchChat }) => {
     let isOwn = msg.senderId === user?._id;
     let formattedTime = "";
     const [isHpovered, setIsHovered] = useState(false);
-
+    console.log(msg);
     if (msg.createdAt) {
         const date = new Date(msg.createdAt);
         formattedTime = date.toLocaleString("en-GB", {
@@ -57,7 +57,20 @@ const SingleMessage = ({ msg, user, fetchChat }) => {
                 style={{ width: 30, height: 30 }}
             />
             <div className="chat-content">
-                <p>{msg.text}</p>
+                {msg.imageUrl ? (
+                    <img
+                        src={msg.imageUrl}
+                        alt="chat-img"
+                        style={{
+                            maxWidth: "200px",
+                            maxHeight: "200px",
+                            borderRadius: "4px",
+                            objectFit: "cover",
+                        }}
+                    />
+                ) : (
+                    <p>{msg.text}</p>
+                )}
                 <span
                     className="timestamp"
                     style={{
@@ -77,7 +90,7 @@ const SingleMessage = ({ msg, user, fetchChat }) => {
                             onClick={() =>
                                 handleDelete({
                                     messageId: msg._id,
-                                    userIds: [user._id], // <-- send as array
+                                    userIds: [user._id],
                                 })
                             }
                         >
