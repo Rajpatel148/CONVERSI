@@ -39,8 +39,13 @@ export const signUpRequest = async (data) => {
     return { token, user, data };
 };
 
-export const logOutClient = () => {
+export const logOutClient = async () => {
     setAuthToken(null);
+    try {
+        await api.post("/user/logout");
+    } catch (error) {
+        console.log(error);
+    }
 };
 
 export const getChatlist = async () => {
@@ -71,12 +76,12 @@ export const sendMsg = async (msgData) => {
     }
 };
 
-export const deleteMsg = async(msgData)=>{
+export const deleteMsg = async (msgData) => {
     try {
-        const res = await api.post("/message/delete",msgData);
+        const res = await api.post("/message/delete", msgData);
         return res.data;
     } catch (error) {
         console.log(error);
     }
-}
+};
 export default api;

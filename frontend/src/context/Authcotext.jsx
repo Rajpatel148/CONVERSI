@@ -72,11 +72,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        logOutClient();
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        setToken(null);
-        setUser(null);
+        try {
+            await logOutClient();
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setToken(null);
+            setUser(null);
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     const myChatlist = async () => {
