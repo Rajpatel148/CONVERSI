@@ -3,12 +3,11 @@ import { Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../context/Authcotext";
 
-const SingleMessage = ({ msg, user, fetchChat }) => {
-    const { deleteMessage } = useAuth();
+const SingleMessage = ({ msg, fetchChat }) => {
+    const { deleteMessage, user, socket, activeChatId } = useAuth();
     let isOwn = msg.senderId === user?._id;
     let formattedTime = "";
     const [isHpovered, setIsHovered] = useState(false);
-    console.log(msg);
     if (msg.createdAt) {
         const date = new Date(msg.createdAt);
         formattedTime = date.toLocaleString("en-GB", {
@@ -33,6 +32,10 @@ const SingleMessage = ({ msg, user, fetchChat }) => {
     const handleDelete = async (msgData) => {
         try {
             const res = await deleteMessage(msgData);
+            await socket.emit("delete-message", {
+                ...msgData,
+                activeChatId,
+            });
             fetchChat();
         } catch (error) {
             // Optionally show error

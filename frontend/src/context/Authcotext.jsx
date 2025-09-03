@@ -9,10 +9,16 @@ import {
     setAuthToken,
     signUpRequest,
 } from "../api/axios";
+import io from "socket.io-client";
+let socket = io(import.meta.env.VITE_BASE_URL);
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    const [chatList, setChatList] = useState([]);
+    const [activeChatId, setActiveChatId] = useState("");
+    const [sending, setSending] = useState(false);
+    const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
     const [user, setUser] = useState(() => {
         try {
             const raw = localStorage.getItem("user");
@@ -148,6 +154,15 @@ export const AuthProvider = ({ children }) => {
             send,
             deleteMessage,
             uploadAvatar,
+            socket,
+            chatList,
+            setChatList,
+            activeChatId,
+            setActiveChatId,
+            sending,
+            setSending,
+            isOtherUserTyping,
+            setIsOtherUserTyping,
         }),
         [
             user,
@@ -160,6 +175,15 @@ export const AuthProvider = ({ children }) => {
             send,
             deleteMessage,
             uploadAvatar,
+            socket,
+            chatList,
+            setChatList,
+            activeChatId,
+            setActiveChatId,
+            sending,
+            setSending,
+            isOtherUserTyping,
+            setIsOtherUserTyping,
         ]
     );
 

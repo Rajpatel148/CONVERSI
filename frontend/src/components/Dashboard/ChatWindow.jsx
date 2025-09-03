@@ -6,14 +6,25 @@ import { Paperclip, Send, Smile } from "lucide-react";
 import { useAuth } from "../../context/Authcotext";
 import SingleMessage from "./SingleMessage.jsx/";
 import EmojiPicker from "emoji-picker-react";
-import Button from "@mui/material/Button";
 
-const ChatWindow = ({ chatId, chatUser }) => {
-    const { chat, send, user, uploadAvatar } = useAuth();
+const ChatWindow = () => {
+    const {
+        chat,
+        send,
+        socket,
+        user,
+        uploadAvatar,
+        sending,
+        setSending,
+        activeChatId: chatId,
+        chatList,
+        isOtherUserTyping,
+        setIsOtherUserTyping,
+    } = useAuth();
     const [chatData, setChatData] = useState(null);
     const [message, setMessage] = useState("");
-    const [sending, setSending] = useState(false);
-    const currentChatUser = chatUser?.find((c) => c._id === chatId);
+    const [typing, settyping] = useState(false);
+    const currentChatUser = chatList?.find((c) => c._id === chatId);
     const [emojisVisible, setEmojisVisible] = useState(false);
 
     const fetchChat = async () => {
@@ -27,23 +38,96 @@ const ChatWindow = ({ chatId, chatUser }) => {
     useEffect(() => {
         if (!chatId) return;
         fetchChat();
-    }, [chatId]);
+    }, [chatId, chatData]);
+    // DEfine socket events
+    useEffect(() => {
+        socket.on("user-joined-room", (userId) => {
+            const updatedList = chatData.map((msg) => {
+                if (msg.senderId === user._id && userId !== user._id) {
+                    const index = msg.seenBy.findIndex(
+                        (seen) => seen.user === userId
+                    );
+                    if (index === -1) {
+                        msg.seenBy.push({
+                            user: userId,
+                            seenAt: new Date(),
+                        });
+                    }
+                }
+                return msg;
+            });
+            setChatData(updatedList);
+        });
+
+        socket.on("typing", (data) => {
+            if (data.typer !== user._id) {
+                setIsOtherUserTyping(true);
+            }
+        });
+        socket.on("stop-typing", (data) => {
+            if (data.typer !== user._id) {
+                setIsOtherUserTyping(false);
+            }
+        });
+        socket.on("receive-message", (data) => {
+            setChatData((prev) => {
+                // Scroll after state update
+                setTimeout(() => {
+                    const chatBox = document.getElementById("chat-box");
+                    if (chatBox) {
+                        chatBox.scrollTo({
+                            top: chatBox.scrollHeight,
+                            behavior: "smooth",
+                        });
+                    }
+                }, 50);
+                return [...prev, data];
+            });
+        });
+
+        socket.on("message-deleted", (data) => {
+            const { messageId } = data;
+            setChatData((prev) => prev.filter((msg) => msg._id !== messageId));
+        });
+        return () => {
+            socket.off("typing");
+            socket.off("stop-typing");
+            socket.off("receive-message");
+            socket.off("message-deleted");
+        };
+    }, [socket, chatData, setChatData, user._id, setIsOtherUserTyping]);
 
     const handleSend = async () => {
         if (!message.trim()) return;
         setSending(true);
+        socket.emit("stop-typing", {
+            typer: user._id,
+            chatId,
+        });
         try {
-            await send({
+            // await send({
+            //     chatId,
+            //     text: message,
+            //     senderId: user?._id,
+            // });
+            socket.emit("send-message", {
                 chatId,
                 text: message,
-                senderId: user?._id,
+                senderId: user._id,
             });
             setMessage("");
             fetchChat();
         } catch (error) {
-            // Optionally show error
+            console.log(error);
         }
         setSending(false);
+
+        setTimeout(() => {
+            document.getElementById("chat-box")?.scrollTo({
+                top: document.getElementById("chat-box").scrollHeight,
+                behavior: "smooth",
+            });
+        }, 100);
     };
 
     const handleEmojiClick = (emojiData, event) => {
@@ -55,8 +139,9 @@ const ChatWindow = ({ chatId, chatUser }) => {
         const file = e.target.files[0];
         if (!file) return;
         setSending(true);
-        const imageUrl = await uploadAvatar(file);
         try {
+            const imageUrl = await uploadAvatar(file);
+            if (!imageUrl) throw new Error();
             await send({
                 chatId,
                 imageUrl,
@@ -69,6 +154,26 @@ const ChatWindow = ({ chatId, chatUser }) => {
         fetchChat();
         setSending(false);
     };
+
+    const handleTyping = () => {
+        if (message === "" && typing) {
+            settyping(false);
+            socket.emit("stop-typing", {
+                typer: user._id,
+                chatId,
+            });
+        } else if (message !== "" && !typing) {
+            settyping(true);
+            socket.emit("typing", {
+                typer: user._id,
+                chatId,
+            });
+        }
+    };
+
+     const removeMessageFromList = (messageId) => {
+         setChatData((prev) => prev.filter((msg) => msg._id !== messageId));
+     };
     return (
         <div className="chat-window">
             {/* Chat Header */}
@@ -77,6 +182,7 @@ const ChatWindow = ({ chatId, chatUser }) => {
             {/* Chat */}
             <Box
                 className="chat-box"
+                id="chat-box"
                 style={{
                     display: "flex",
                     flexDirection: "column",
@@ -89,8 +195,8 @@ const ChatWindow = ({ chatId, chatUser }) => {
                             <SingleMessage
                                 key={msg._id || msg.id}
                                 msg={msg}
-                                user={user}
                                 fetchChat={fetchChat}
+                                removeMessageFromList={removeMessageFromList}
                             />
                         );
                     })
@@ -107,6 +213,9 @@ const ChatWindow = ({ chatId, chatUser }) => {
                     <Paperclip
                         size={22}
                         color={sending ? "#aaa" : "rgb(75 ,165 ,75)"}
+                        style={{
+                            cursor: sending ? "not-allowed" : "pointer",
+                        }}
                     />
                     <input
                         type="file"
@@ -121,7 +230,10 @@ const ChatWindow = ({ chatId, chatUser }) => {
                         placeholder="Type a message..."
                         className="message-input"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        onChange={(e) => {
+                            setMessage(e.target.value);
+                            handleTyping();
+                        }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !sending) handleSend();
                         }}
@@ -177,7 +289,7 @@ const ChatWindow = ({ chatId, chatUser }) => {
                                     cy="25"
                                     r="20"
                                     fill="none"
-                                    stroke="#fff"
+                                    stroke="rgb(75, 165, 75)"
                                     strokeWidth="5"
                                     strokeDasharray="31.4 31.4"
                                     strokeLinecap="round"

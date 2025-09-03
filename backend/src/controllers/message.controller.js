@@ -88,3 +88,74 @@ export const deleteMessage = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, {}, "Message Deleted successfully"));
 });
+
+export const sendMessageHandler = async (data) => {
+    try {
+        const {
+            text,
+            imageUrl,
+            senderId,
+            chatId,
+            receiverId,
+            isReceiverInsideChatRoom,
+        } = data;
+
+        // Get the chat
+        const chat = await Chat.findById(chatId);
+
+        // Create a new message
+        const newMsg = await Message.create({
+            chatId,
+            senderId,
+            text,
+            imageUrl,
+            seenBy: isReceiverInsideChatRoom
+                ? [
+                      {
+                          user: receiverId,
+                          seenAt: new Date(),
+                      },
+                  ]
+                : [],
+        });
+
+        // update the chat lesg mesg
+        chat.latestMsg = text ? text : "new image";
+
+        // if receiver is not in chatroom so increament the unreadcount
+        if (!isReceiverInsideChatRoom) {
+            chat.unreadCounts.map((unread) => {
+                if (unread.userId.toString() == receiverId.toString()) {
+                    unread.count += 1;
+                }
+            });
+        }
+
+        // Save the chat
+        await chat.save();
+
+        return newMsg;
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+export const deleteMessageHandler = async (data) => {
+    try {
+        const { messageId, userIDS } = data;
+        const message = await Message.findById(messageId);
+
+        if (!message) return false;
+
+        userIDS.forEach((userId) => {
+            if (!message.deletedFrom.includes(userId)) {
+                message.deletedFrom.push(userId);
+            }
+        });
+
+        await message.save();
+        return true;
+    } catch (error) {
+        console.log(error);
+    }
+};

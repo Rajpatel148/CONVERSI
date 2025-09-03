@@ -5,13 +5,19 @@ import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import { Send } from "lucide-react";
 import ChatSideBar from "../components/dashboard/ChatSideBar.jsx/";
-import ChatWindow from "../components/dashboard/ChatWindow.jsx";
+import ChatWindow from "../components/dashboard/ChatWindow.jsx/";
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, loading, myChatlist } = useAuth();
-    const [activeChatId, setActiveChatId] = useState(0);
-    const [chats, setChats] = useState([]);
+    const {
+        user,
+        loading,
+        myChatlist,
+        activeChatId,
+        setActiveChatId,
+        chatList,
+        setChatList,
+    } = useAuth();
 
     useEffect(() => {
         if (!user) {
@@ -22,7 +28,7 @@ const Dashboard = () => {
             try {
                 const chatData = await myChatlist();
                 // console.log("Fetched chats:", chatData);
-                setChats(chatData.data);
+                setChatList(chatData.data);
             } catch (error) {
                 console.error("Error fetching chats:", error);
             }
@@ -33,7 +39,6 @@ const Dashboard = () => {
         //! use Skeleton here https://mui.com/material-ui/react-skeleton/
         return <div>Loading...</div>;
     }
-
 
     return (
         <Box
@@ -57,7 +62,7 @@ const Dashboard = () => {
                         borderRight: { md: "1px solid #E0E0E0" },
                     }}
                 >
-                    <ChatSideBar chats={chats} activeChatId={activeChatId} setActiveChatId={setActiveChatId} />
+                    <ChatSideBar />
                 </Box>
 
                 {/* Chat Window */}
@@ -69,7 +74,7 @@ const Dashboard = () => {
                     }}
                 >
                     {activeChatId ? (
-                        <ChatWindow chatId={activeChatId} chatUser={chats} />
+                        <ChatWindow />
                     ) : (
                         <Stack
                             alignItems="center"

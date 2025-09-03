@@ -1,8 +1,11 @@
 import React from "react";
 import "./ChatBar.css";
 import Avatar from "@mui/material/Avatar";
+import { useAuth } from "../../context/Authcotext";
 
-const ChatBar = ({ data, activeChatId, setActiveChatId }) => {
+const ChatBar = ({ data }) => {
+    const { user,activeChatId, setActiveChatId, socket } = useAuth();
+
     const isGroup = data?.isGroup;
     const name = isGroup
         ? data?.name || "Unnamed Group"
@@ -14,10 +17,24 @@ const ChatBar = ({ data, activeChatId, setActiveChatId }) => {
         ? data.unreadCounts.length
         : 0;
 
+    // Handleopen
+    const handleChatOpen = async () => {
+        try {
+            await socket.emit("stop-typing", {
+                typer: user._id,
+                chatId: activeChatId,
+            });
+
+            await socket.emit("leave-chat", activeChatId);
+            setActiveChatId(data._id);
+        } catch (error) {
+            console.log(error);
+        }
+    };
     return (
         <div
             className="chat-bar"
-            onClick={() => setActiveChatId(data._id)}
+            onClick={handleChatOpen}
             style={{
                 backgroundColor:
                     activeChatId === data._id && "rgba(10, 153, 67, 0.578)",
