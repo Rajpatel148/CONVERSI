@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Ellipsis, MessageCircle, Plus, Search, Settings } from "lucide-react";
+import { ArrowLeft, Ellipsis, MessageCircle, Plus, Search, Settings } from "lucide-react";
 import ChatBar from "./ChatBar";
 import Box from "@mui/material/Box";
 import "./ChatSideBar.css";
@@ -24,6 +24,8 @@ const ChatSideBar = () => {
     } = useAuth();
 
     const [search, setSearch] = useState("");
+    const [nfSearch, setNfSearch] = useState("");
+
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
@@ -64,24 +66,25 @@ const ChatSideBar = () => {
         };
     }, [chatList, activeChatId, user, setChatList, socket]);
 
-    // 🔍 Fix: use chatList instead of undefined "chats"
-    const handleSearch = (e) => {
-        e.preventDefault();
-        const searchLower = search.toLowerCase();
+    const filteredChats = chatList.filter((chat) => {
+        if (
+            chat.isGroup &&
+            chat.name?.toLowerCase().includes(search.toLocaleLowerCase())
+        )
+            return true;
+        if (Array.isArray(chat.members)) {
+            return chat.members.some((member) =>
+                member.fullname
+                    ?.toLowerCase()
+                    .includes(search.toLocaleLowerCase())
+            );
+        }
+        return false;
+    });
 
-        const filteredChats = chatList.filter((chat) => {
-            if (chat.isGroup && chat.name?.toLowerCase().includes(searchLower))
-                return true;
-            if (Array.isArray(chat.members)) {
-                return chat.members.some((member) =>
-                    member.fullname?.toLowerCase().includes(searchLower)
-                );
-            }
-            return false;
-        });
-
-        setChatList(filteredChats);
-    };
+    const filteredNonFriends = nonFriends.filter((nf) =>
+        nf.fullname?.toLowerCase().includes(nfSearch.toLowerCase())
+    );
 
     // Menu handlers
     const handleClick = (event) => {
@@ -176,8 +179,8 @@ const ChatSideBar = () => {
                         </div>
                     </div>
 
-                    <Box className="search-bar">
-                        <form onSubmit={handleSearch}>
+                    {!showNFlist ? (
+                        <Box className="search-bar">
                             <Search size={20} />
                             <input
                                 type="text"
@@ -185,22 +188,41 @@ const ChatSideBar = () => {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
-                        </form>
-                    </Box>
+                        </Box>
+                    ) : (
+                        // New search bar with back button
+                        <Box className="nf-search">
+                            <button
+                                onClick={() => {
+                                    setShowNFlist(false);
+                                    setNfSearch("");
+                                }}
+                            >
+                                <ArrowLeft />
+                            </button>
+                            <input
+                                type="text"
+                                placeholder="Search friends..."
+                                value={nfSearch}
+                                onChange={(e) => setNfSearch(e.target.value)}
+                            />
+                        </Box>
+                    )}
                 </div>
 
                 {/* Chat list */}
                 {!showNFlist ? (
                     <div className="chat-list">
-                        {Array.isArray(chatList) &&
-                            chatList.map((chat) => (
+                        {Array.isArray(filteredChats) &&
+                            filteredChats.map((chat) => (
                                 <ChatBar key={chat._id} data={chat} />
                             ))}
                     </div>
                 ) : (
                     <div className="chat-list">
-                        {Array.isArray(nonFriends) && nonFriends.length > 0 ? (
-                            nonFriends.map((nf) => (
+                        {Array.isArray(filteredNonFriends) &&
+                        filteredNonFriends.length > 0 ? (
+                            filteredNonFriends.map((nf) => (
                                 <div
                                     className="chat-bar"
                                     key={nf._id}
