@@ -36,44 +36,52 @@ export const socketHandler = async (io, socket) => {
     });
 
     const handleSendMessage = async (data) => {
-        const { chatId, senderId, text, imageUrl } = data;
-
-        const chat = await Chat.findById(chatId).populate("members");
-
-        const receiverId = chat.members.find(
-            (member) => member._id != senderId
-        )._id;
-
-        const receiverPersonalRoom = io.sockets.adapter.rooms.get(
-            receiverId.toString()
-        );
-
-        let isReceiverInsideChatRoom = false;
-
-        if (receiverPersonalRoom) {
-            const receiverSid = Array.from(receiverPersonalRoom)[0];
-            isReceiverInsideChatRoom = io.sockets.adapter.rooms
-                .get(chatId)
-                .has(receiverSid);
-        }
-
-        const message = await sendMessageHandler({
-            text,
-            imageUrl,
-            senderId,
-            chatId,
-            receiverId,
-            isReceiverInsideChatRoom,
-        });
-
-        io.to(chatId).emit("receive-message", message);
-        // sending notification to receiver
-        if (!isReceiverInsideChatRoom) {
-            console.log("Emitting new message to: ", receiverId.toString());
-            io.to(receiverId.toString()).emit(
-                "new-message-notification",
-                message
+        try {
+            const { chatId, senderId, text, imageUrl } = data;
+    
+            const chat = await Chat.findById(chatId).populate("members");
+    
+            if(!chat){
+                console.log("Chat is not found so handle by socket ");
+            }
+    
+            const receiverId = chat.members.find(
+                (member) => member._id != senderId
+            )._id;
+            
+            const receiverPersonalRoom = io.sockets.adapter.rooms.get(
+                receiverId.toString()
             );
+    
+            let isReceiverInsideChatRoom = false;
+    
+            if (receiverPersonalRoom) {
+                const receiverSid = Array.from(receiverPersonalRoom)[0];
+                isReceiverInsideChatRoom = io.sockets.adapter.rooms
+                    .get(chatId)
+                    .has(receiverSid);
+            }
+    
+            const message = await sendMessageHandler({
+                text,
+                imageUrl,
+                senderId,
+                chatId,
+                receiverId,
+                isReceiverInsideChatRoom,
+            });
+    
+            io.to(chatId).emit("receive-message", message);
+            // sending notification to receiver
+            if (!isReceiverInsideChatRoom) {
+                console.log("Emitting new message to: ", receiverId.toString());
+                io.to(receiverId.toString()).emit(
+                    "new-message-notification",
+                    message
+                );
+            }
+        } catch (error) {
+            console.log(error);
         }
     };
 

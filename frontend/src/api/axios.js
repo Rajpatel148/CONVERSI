@@ -84,4 +84,22 @@ export const deleteMsg = async (msgData) => {
         console.log(error);
     }
 };
+
+export const getNonFriendList = async () => {
+    try {
+        const res = await api.get("/chat/non-friends");
+        return res.data.data;
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+export const createNewChat = async (data) => {
+    try {
+        const res = await api.post("/chat/create", data);
+        return res.data;
+    } catch (error) {
+        console.log(error);
+    }
+};
 export default api;

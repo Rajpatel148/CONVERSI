@@ -1,8 +1,10 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
+    createNewChat,
     deleteMsg,
     getChat,
     getChatlist,
+    getNonFriendList,
     loginRequest,
     logOutClient,
     sendMsg,
@@ -19,6 +21,29 @@ export const AuthProvider = ({ children }) => {
     const [activeChatId, setActiveChatId] = useState("");
     const [sending, setSending] = useState(false);
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+    const [nonFriends, setNonFriends] = useState([]);
+
+    useEffect(() => {
+        const fetchChats = async () => {
+            try {
+                const chatData = await myChatlist();
+                setChatList(chatData.data);
+            } catch (error) {
+                console.error("Error fetching chats:", error);
+            }
+        };
+
+        const fetchNFChats = async () => {
+            try {
+                const nfData = await nonFriendsList();
+                setNonFriends(nfData);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        fetchChats();
+        fetchNFChats();
+    }, []);
     const [user, setUser] = useState(() => {
         try {
             const raw = localStorage.getItem("user");
@@ -97,13 +122,21 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await getChat(chatId);
             // setLoading(false);
-            return res;
+            return res.data;
         } catch (error) {
             // setLoading(false);
             throw error;
         }
     };
 
+    const createChat = async(data)=>{
+        try {
+            const response = await createNewChat(data);
+            return response.data;
+        } catch (error) {
+            console.log(error);
+        }
+    }
     const send = async (msgData) => {
         try {
             const res = await sendMsg(msgData);
@@ -146,6 +179,15 @@ export const AuthProvider = ({ children }) => {
             console.error("Error uploading image:", error);
         }
     };
+
+    const nonFriendsList = async () => {
+        try {
+            const response = await getNonFriendList();
+            return response;
+        } catch (error) {
+            console.log(error);
+        }
+    };
     const contextValue = useMemo(
         () => ({
             user,
@@ -167,6 +209,9 @@ export const AuthProvider = ({ children }) => {
             setSending,
             isOtherUserTyping,
             setIsOtherUserTyping,
+            nonFriends,
+            setNonFriends,
+            createChat,
         }),
         [
             user,
@@ -188,6 +233,9 @@ export const AuthProvider = ({ children }) => {
             setSending,
             isOtherUserTyping,
             setIsOtherUserTyping,
+            nonFriends,
+            setNonFriends,
+            createChat,
         ]
     );
 

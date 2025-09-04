@@ -18,12 +18,17 @@ const ChatSideBar = () => {
         setChatList,
         socket,
         logout,
+        nonFriends,
+        setNonFriends,
+        createChat,
     } = useAuth();
 
     const [search, setSearch] = useState("");
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+    // For Non friend list
+    const [showNFlist, setShowNFlist] = useState(false);
 
     useEffect(() => {
         socket.on("new-message-notification", async (data) => {
@@ -94,7 +99,7 @@ const ChatSideBar = () => {
         // 🔥 You can clear token / context here
         try {
             await logout();
-            console.log("Log outed")
+            console.log("Log outed");
             navigate("/");
         } catch (error) {
             console.log(error);
@@ -102,6 +107,53 @@ const ChatSideBar = () => {
         handleClose();
     };
 
+    function timeAgo(dateString) {
+        const now = new Date();
+        const date = new Date(dateString);
+        const seconds = Math.floor((now - date) / 1000);
+
+        const intervals = [
+            { label: "year", seconds: 31536000 },
+            { label: "month", seconds: 2592000 },
+            { label: "week", seconds: 604800 },
+            { label: "day", seconds: 86400 },
+            { label: "hour", seconds: 3600 },
+            { label: "minute", seconds: 60 },
+            { label: "second", seconds: 1 },
+        ];
+
+        for (const interval of intervals) {
+            const count = Math.floor(seconds / interval.seconds);
+            if (count >= 1) {
+                return `Last seen ${count} ${interval.label}${
+                    count !== 1 ? "s" : ""
+                } ago`;
+            }
+        }
+
+        return "Last seen just now";
+    }
+
+    const handleNFclick = async (nf) => {
+        const data = {
+            members: [nf._id, user._id],
+        };
+
+        try {
+            const newChat = await createChat(data);
+
+            // 1. Add new chat at the beginning of chatList
+            setChatList((prev) => [newChat, ...prev]);
+            // 2. Remove nf from nfList
+            setNonFriends((prev) => prev.filter((item) => item._id !== nf._id));
+            // 3. Set active chat
+            setActiveChatId(newChat._id);
+            // 4. showNFlist is off
+            setShowNFlist(false);
+        } catch (error) {
+            console.log(error);
+        }
+    };
     return (
         <div className="chatSideBar">
             {/* Header */}
@@ -115,7 +167,7 @@ const ChatSideBar = () => {
                             <h2>Conversi</h2>
                         </div>
                         <div className="header-btns">
-                            <button>
+                            <button onClick={() => setShowNFlist(true)}>
                                 <Plus />
                             </button>
                             <button>
@@ -138,12 +190,64 @@ const ChatSideBar = () => {
                 </div>
 
                 {/* Chat list */}
-                <div className="chat-list">
-                    {Array.isArray(chatList) &&
-                        chatList.map((chat) => (
-                            <ChatBar key={chat._id} data={chat} />
-                        ))}
-                </div>
+                {!showNFlist ? (
+                    <div className="chat-list">
+                        {Array.isArray(chatList) &&
+                            chatList.map((chat) => (
+                                <ChatBar key={chat._id} data={chat} />
+                            ))}
+                    </div>
+                ) : (
+                    <div className="chat-list">
+                        {Array.isArray(nonFriends) && nonFriends.length > 0 ? (
+                            nonFriends.map((nf) => (
+                                <div
+                                    className="chat-bar"
+                                    key={nf._id}
+                                    onClick={() => handleNFclick(nf)}
+                                    style={{
+                                        backgroundColor:
+                                            activeChatId === nf._id &&
+                                            "rgba(10, 153, 67, 0.578)",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <div className="chat-bar-avatar">
+                                        <Avatar
+                                            src={nf?.avatar}
+                                            alt={nf?.fullname}
+                                            sx={{
+                                                width: "56px",
+                                                height: "56px",
+                                                objectFit: "cover",
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="chat-bar-info">
+                                        <div
+                                            className="info-top"
+                                            style={{
+                                                textTransform: "capitalize",
+                                            }}
+                                        >
+                                            {nf?.fullname}
+                                        </div>
+                                        <div
+                                            className="info-bottom"
+                                            style={{
+                                                fontSize: "10px",
+                                            }}
+                                        >
+                                            {timeAgo(nf.lastseen)}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <button className="invite">Invite friends</button>
+                        )}
+                    </div>
+                )}
             </div>
             {/* User Profile + Menu */}
             <div className="user-profile">

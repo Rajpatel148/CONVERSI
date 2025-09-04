@@ -13,7 +13,6 @@ export const initServer = (server) => {
     //! use a auth middleware for socket connection 
 
     io.on("connection", (socket) => {
-        console.log("New client connected:", socket.id);
         socketHandler(io, socket);
     });
     return io;

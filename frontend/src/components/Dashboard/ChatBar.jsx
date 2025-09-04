@@ -1,17 +1,14 @@
-import React from "react";
-import "./ChatBar.css";
 import Avatar from "@mui/material/Avatar";
 import { useAuth } from "../../context/Authcotext";
 
 const ChatBar = ({ data }) => {
     const { user,activeChatId, setActiveChatId, socket } = useAuth();
-
     const isGroup = data?.isGroup;
     const name = isGroup
         ? data?.name || "Unnamed Group"
         : data?.members?.[0]?.fullname || "Unknown User";
 
-    const avatarSrc = data?.avatar || "";
+    const avatarSrc = data?.members?.[0]?.avatar || "";
     const latestMsg = data?.latestMsg || "No messages yet";
     const unreadCount = Array.isArray(data?.unreadCounts)
         ? data.unreadCounts.length

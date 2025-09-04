@@ -20,11 +20,14 @@ const ChatWindow = () => {
         chatList,
         isOtherUserTyping,
         setIsOtherUserTyping,
+        nonFriends,
     } = useAuth();
     const [chatData, setChatData] = useState(null);
     const [message, setMessage] = useState("");
     const [typing, settyping] = useState(false);
-    const currentChatUser = chatList?.find((c) => c._id === chatId);
+    const currentChatUser =
+        chatList?.find((c) => c._id === chatId) ||
+        nonFriends.filter((nf) => nf._id == chatId)[0];
     const [emojisVisible, setEmojisVisible] = useState(false);
 
     const fetchChat = async () => {
@@ -38,7 +41,8 @@ const ChatWindow = () => {
     useEffect(() => {
         if (!chatId) return;
         fetchChat();
-    }, [chatId, chatData]);
+    }, [chatId]);
+
     // DEfine socket events
     useEffect(() => {
         socket.on("user-joined-room", (userId) => {
@@ -171,9 +175,9 @@ const ChatWindow = () => {
         }
     };
 
-     const removeMessageFromList = (messageId) => {
-         setChatData((prev) => prev.filter((msg) => msg._id !== messageId));
-     };
+    const removeMessageFromList = (messageId) => {
+        setChatData((prev) => prev.filter((msg) => msg._id !== messageId));
+    };
     return (
         <div className="chat-window">
             {/* Chat Header */}

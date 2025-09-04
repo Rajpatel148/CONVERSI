@@ -4,6 +4,7 @@ import {
     createChat,
     getChat,
     getChatList,
+    getNonFriendsList,
 } from "../controllers/chat.controller.js";
 
 const router = Router();
@@ -14,5 +15,6 @@ router.use(verifyJWT);
 // Routes
 router.route("/create").post(createChat);
 router.route("/list").get(getChatList);
+router.route("/non-friends").get(getNonFriendsList);
 router.route("/:id").get(getChat);
 export default router;

@@ -23,17 +23,6 @@ const Dashboard = () => {
         if (!user) {
             navigate("/");
         }
-
-        const fetchChats = async () => {
-            try {
-                const chatData = await myChatlist();
-                // console.log("Fetched chats:", chatData);
-                setChatList(chatData.data);
-            } catch (error) {
-                console.error("Error fetching chats:", error);
-            }
-        };
-        fetchChats();
     }, []);
     if (loading) {
         //! use Skeleton here https://mui.com/material-ui/react-skeleton/

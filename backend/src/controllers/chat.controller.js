@@ -6,10 +6,12 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Chat } from "../models/chat.models.js";
+import { User } from "../models/user.models.js";
 
 export const createChat = asyncHandler(async (req, res) => {
     // get data from frontend
     const { members: memberIds, name } = req.body;
+    console.log(memberIds);
     // validate the data
     if (!memberIds || memberIds?.length < 2) {
         throw new ApiError(400, "Invalid requrest !!");
@@ -17,12 +19,22 @@ export const createChat = asyncHandler(async (req, res) => {
     if (memberIds?.length > 2 && !name) {
         throw new ApiError(400, "Group name is require ");
     }
-    // find the chat if its exists
-    const existedChat = await Chat.findOne({
-        members: {
-            $all: memberIds,
-        },
-    }).populate("members", "-password");
+    // Check if chat already exists
+    let existedChat;
+    if (memberIds.length === 2) {
+        // 1-on-1 chat: ensure no group is mistakenly returned
+        existedChat = await Chat.findOne({
+            isGroup: false,
+            members: { $all: memberIds, $size: 2 },
+        }).populate("members", "-password");
+    } else {
+        // Group chat: optional logic for duplicate groups if needed
+        existedChat = await Chat.findOne({
+            isGroup: true,
+            name: name,
+        }).populate("members", "-password");
+    }
+
     if (existedChat) {
         existedChat.members = existedChat.members.filter(
             (memberId) => memberId != req.user._id
@@ -64,7 +76,7 @@ export const getChat = asyncHandler(async (req, res) => {
     if (!chat) {
         throw new ApiError(400, "Chat not found");
     }
-
+    
     return res
         .status(200)
         .json(new ApiResponse(200, chat, "Chat fetched successfully"));
@@ -98,4 +110,25 @@ export const getChatList = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(new ApiResponse(200, chatList, "ChatList fetched successfully"));
+});
+
+export const getNonFriendsList = asyncHandler(async (req, res) => {
+    // Use correct user id field
+    const chat = await Chat.find({
+        members: { $in: [req.user._id] },
+        isGroup: false,
+    });
+    //Get all member IDs from chats
+    const memberIds = chat.length ? chat.flatMap((c) => c.members) : [];
+
+    // Exclude current user and all chat members
+    const users = await User.find({
+        _id: { $nin: [...memberIds, req.user._id] },
+    }).select("-password");
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, users, "Non-friend are fetched successfully")
+        );
 });
