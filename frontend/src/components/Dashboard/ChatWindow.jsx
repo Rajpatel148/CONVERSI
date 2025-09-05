@@ -70,7 +70,7 @@ const ChatWindow = () => {
         socket.on("new-message-notification", async (data) => {
             try {
                 // await send(data);
-                console.log("New message notification received:", data);
+                
             } catch (error) {
                 console.log(error);
             }

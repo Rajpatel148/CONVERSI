@@ -53,13 +53,25 @@ a:hover {
     gap: 1rem;
     font-size: 2rem;
 }
-.nav-btn:first-child:hover {
-    background-color: lightgreen;
-    color: rgba(0, 128, 0, 0.764);
+.nav-btn:first-child {
+    color: black;
+    text-transform: capitalize;
+    font-family: "Poppins", sans-serif;
+    padding: 6px 16px;
+    &:hover {
+        background-color: lightgreen;
+        color: rgba(0, 128, 0, 0.764);
+    }
 }
-.nav-btn:last-child:hover {
-    background-color: darkgreen;
+.nav-btn:last-child {
     color: white;
+    background-color: green;
+    text-transform: capitalize;
+    font-family: "Poppins", sans-serif;
+    &:hover {
+        background-color: darkgreen;
+        color: white;
+    }
 }
 
 /* Hero SEction */
@@ -150,12 +162,12 @@ section {
     font-size: 2.5rem;
     padding-bottom: 0.75rem;
 }
-.ctaContainer p{
+.ctaContainer p {
     margin: 0 auto;
     max-width: 45rem;
     font-size: 1.1rem;
 }
-.ctaBtns{
+.ctaBtns {
     margin-top: 2rem;
     display: flex;
     gap: 1rem;
@@ -163,7 +175,7 @@ section {
 }
 
 /* Footer section */
-footer{
+footer {
     width: 100vw;
     text-align: center;
     border-top: 1px solid rgba(0, 0, 0, 0.177);
@@ -176,21 +188,24 @@ footer{
     .heroBtns {
         flex-direction: column;
     }
-    .ctaBtns{
+    .ctaBtns {
         flex-direction: column;
     }
-
-    .ctaContainer h2{
+    .navLogo .logo-name{
+        font-size: 1.25rem;
+    }
+    .ctaContainer h2 {
         font-size: 2rem;
     }
-    .ctaContainer p{
+    .ctaContainer p {
         font-size: 0.9rem;
     }
     .sectionContainer {
         width: 95%;
     }
-    .nav-btn {
-        width: auto;
+    .navBtns .nav-btn{
+        font-size: 0.7rem;
+        padding: 4px 12px;
     }
 }
 @media (max-width: 775px) {
@@ -201,7 +216,7 @@ footer{
         display: none;
     }
     .hero-title {
-        font-size: 2.85rem;
+        font-size: 2.65rem;
     }
 }
 @media (max-width: 985px) {

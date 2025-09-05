@@ -6,10 +6,12 @@ import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import "./LandingPage.css";
 import Auth from "../components/Auth/Auth";
+import useIsMobile from "../hook/useIsMobile.jsx";
 
 const LandingPage = () => {
     const [authVisible, setAuthVisible] = useState(false);
     const [isSignIn, setIsSignIn] = useState(false);
+    const isMobile = useIsMobile();
     return (
         <div className="landingPage">
             {/* NavBar */}
@@ -37,12 +39,6 @@ const LandingPage = () => {
                                 return true;
                             }}
                             className="nav-btn"
-                            sx={{
-                                color: "black",
-                                textTransform: "capitalize",
-                                fontFamily: "poppins",
-                                padding: "6px 16px",
-                            }}
                         >
                             Log in
                         </Button>
@@ -54,12 +50,6 @@ const LandingPage = () => {
                                 return true;
                             }}
                             className="nav-btn"
-                            sx={{
-                                color: "white",
-                                backgroundColor: "green",
-                                textTransform: "capitalize",
-                                fontFamily: "poppins",
-                            }}
                         >
                             Get Started
                         </Button>
@@ -269,7 +259,7 @@ const LandingPage = () => {
                         onClick={(e) => e.stopPropagation()}
                         sx={{
                             position: "absolute",
-                            top: "4rem",
+                            top: isMobile ? "1rem" : "2rem",
                             left: "auto",
                             zIndex: 2,
                         }}

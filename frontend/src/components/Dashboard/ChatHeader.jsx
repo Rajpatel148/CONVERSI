@@ -1,13 +1,13 @@
 import React from "react";
 import Avatar from "@mui/material/Avatar";
-import { EllipsisVertical, Phone, Video } from "lucide-react";
+import { ArrowLeft, EllipsisVertical, Phone, Video } from "lucide-react";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useAuth } from "../../context/Authcotext";
 
 const ChatHeader = ({ data }) => {
     const [userData, setUserData] = useState(data);
-    const { socket } = useAuth();
+    const { socket, setActiveChatId } = useAuth();
     useEffect(() => {
         socket.on("user-online", (id) => {
             if (userData?.isGroup) return;
@@ -23,7 +23,6 @@ const ChatHeader = ({ data }) => {
                 }));
             }
         });
-
 
         socket.on("user-offline", (id) => {
             if (userData?.isGroup) return;
@@ -41,12 +40,20 @@ const ChatHeader = ({ data }) => {
         });
         return () => {
             socket.off("user-online");
-            socket.off("user-offline")
+            socket.off("user-offline");
         };
     }, [socket, userData]);
     return (
         <div className="chat-window-header">
             <div className="header-profile">
+                <button
+                    className="header-back-btn"
+                    onClick={() => {
+                        setActiveChatId("");
+                    }}
+                >
+                    <ArrowLeft />
+                </button>
                 <Avatar
                     src={userData?.avatar || ""}
                     alt="Profile"

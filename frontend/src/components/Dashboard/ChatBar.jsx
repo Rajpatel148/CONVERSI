@@ -53,9 +53,9 @@ const ChatBar = ({ chatUserData }) => {
                 <div className="info-top">{name}</div>
                 <div className="info-bottom">
                     <p>{latestMsg}</p>
-                    {unreadCount > 0 && (
+                    {/* {unreadCount > 0 && (
                         <div className="unread-badge">{unreadCount}</div>
-                    )}
+                    )} */}
                 </div>
             </div>
         </div>

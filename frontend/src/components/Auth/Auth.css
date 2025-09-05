@@ -18,7 +18,6 @@
     text-align: center;
     font-size: 0.95rem;
     color: rgba(0, 0, 0, 0.8);
-    padding-bottom: 1rem;
 }
 .authToggle {
     width: 100%;
@@ -71,8 +70,63 @@ input {
     margin: none !important;
     margin-top: 0.3rem;
 }
-.toggleLink{
+.toggleLink {
     cursor: pointer;
     text-decoration: underline;
     color: rgba(0, 128, 0, 0.77);
 }
+.signUpForm label[for="avatar"],
+.signUpForm input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+    word-break: break-word;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.845);
+}
+/* Hide default file input and style a custom button if desired */
+.signUpForm input[type="file"] {
+    padding: 6px;
+}
+@media (max-width: 600px) {
+    .authContainer {
+        padding: 0 1rem;
+    }
+    .auth {
+        max-width: fit-content;
+        min-width: 0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.08);
+    }
+    .auth h1 {
+        font-size: 1.5rem;
+    }
+    .authToggle button {
+        font-size: 0.85rem;
+        padding: 6px;
+    }
+    .signInForm,
+    .signUpForm {
+        padding: 0.25rem;
+        gap: 3px;
+    }
+    .signUpForm label[for="avatar"],
+    .signUpForm input[type="file"] {
+        /* font-size: 0.95rem; */
+    }
+    input {
+        padding: 6px;
+    }
+    .submit {
+        padding: 8px;
+        font-size: 1rem;
+    }
+}
+
+/* @media (max-width: 900px) {
+  .auth {
+    width: 90vw;
+    min-width: 0;
+    padding: 1.5rem;
+  }
+} */

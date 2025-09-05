@@ -58,7 +58,7 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
     return (
         <form className="signUpForm">
             <label htmlFor="avatar">Avatar</label>
-            <input type="file" id="avatar" name="avatar" accept="image/*" onChange={handleUpload} required/>
+            <input type="file" id="avatar" name="avatar" accept="image/*" onChange={handleUpload} required/> 
             <label htmlFor="username">Username</label>
             <input
                 type="text"
