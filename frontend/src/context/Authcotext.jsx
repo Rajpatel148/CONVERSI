@@ -31,15 +31,15 @@ export const AuthProvider = ({ children }) => {
             return null;
         }
     });
+    const [token, setToken] = useState(
+        () => localStorage.getItem("token") || null
+    );
     // after token state initialization
     useEffect(() => {
         if (token) {
             setAuthToken(token);
         }
     }, [token]);
-    const [token, setToken] = useState(
-        () => localStorage.getItem("token") || null
-    );
 
     useEffect(() => {
         socket.on("new-user-registered", (newUser) => {

@@ -30,7 +30,7 @@ export const socketHandler = async (io, socket) => {
     socket.on("join-chat", async ({ roomId, userId }) => {
         // validate user is a member of conversation:
         const conv = await Chat.findById(roomId);
-        if (!conv || !conv.members.includes(userId)) return;
+        if (!conv || !conv.members.some(m=>m.toString()===userId)) return;
         socket.join(roomId);
         // reset unread and emit user-joined-room
     });

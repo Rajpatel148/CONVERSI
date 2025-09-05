@@ -25,9 +25,9 @@ const SignIn = ({ isSignIn, setIsSignIn }) => {
 
         try {
             const res = await login(formData);     
-            socket.emit("setup", res?.newUser?._id);
             if (res.success) {
                 navigate("/dashboard");
+                socket.emit("setup", res?.newUser?._id);
             }
         } catch (error) {
             console.log(error);

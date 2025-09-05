@@ -4,10 +4,10 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useEffect } from "react";
 import Error from "./pages/Error.jsx";
-
-const socket = io(import.meta.env.VITE_BASE_URL);
+import { useAuth } from "./context/Authcotext.jsx";
 
 const App = () => {
+    const { socket } = useAuth();
     useEffect(() => {
         socket.on("connect", () => {});
 
