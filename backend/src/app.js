@@ -11,18 +11,12 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(
     cors({
-        origin: `${process.env.FRONTEND_URL}`,
+        origin: process.env.FRONTEND_URL,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],
     })
 );
-// handle preflight explicitly (optional but safe)
-app.options("*", cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
 //!Routes
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.routes.js";
