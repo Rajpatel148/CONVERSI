@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 import { useEffect } from "react";
 import Error from "./pages/Error.jsx";
 
-const socket = io("http://localhost:4000");
+const socket = io(import.meta.env.VITE_BASE_URL);
 
 const App = () => {
     useEffect(() => {
