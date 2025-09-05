@@ -4,7 +4,7 @@ import { socketHandler } from "./socketHandler.js";
 export const initServer = (server) => {
     let io = new Server(server, {
         cors: {
-            origin: "http://localhost:5173",
+            origin: "https://conversi-nine.vercel.app/",
             methods: ["GET", "POST"],
             credentials: true,
         },

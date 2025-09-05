@@ -11,7 +11,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: "https://conversi-nine.vercel.app/",
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
     })
