@@ -225,8 +225,3 @@
         color: rgba(0, 128, 0, 0.705);
     }
 }
-@media (max-width: 900px) {
-    .chat-list {
-        max-height: 30vh;
-    }
-}
