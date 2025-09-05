@@ -6,9 +6,14 @@ import "dotenv/config";
 
 export const verifyJWT = asyncHandler(async (req, _, next) => {
     try {
-        const token =
-            req.cookies?.accessToken ||
-            req.headers["authorization"]?.replace("Bearer", "").trim();
+        const authHeader =
+            req.headers.authorization || req.headers.Authorization;
+        const bearerToken =
+            authHeader && authHeader.startsWith("Bearer ")
+                ? authHeader.split(" ")[1]
+                : null;
+
+        const token = req.cookies?.accessToken || bearerToken;
 
         if (!token) {
             throw new ApiError(401, "Unauthorizaded User");

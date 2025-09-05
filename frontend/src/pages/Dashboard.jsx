@@ -31,7 +31,7 @@ const Dashboard = () => {
         const fetchChats = async () => {
             try {
                 const chatData = await myChatlist();
-                setChatList(chatData.data);
+                setChatList(Array.isArray(chatData?.data) ? chatData.data : []);
             } catch (error) {
                 console.error("Error fetching chats:", error);
             }
@@ -40,7 +40,7 @@ const Dashboard = () => {
         const fetchNFChats = async () => {
             try {
                 const nfData = await nonFriendsList();
-                setNonFriends(nfData);
+                setNonFriends(Array.isArray(nfData) ? nfData : []);
             } catch (error) {
                 console.log(error);
             }

@@ -31,7 +31,12 @@ export const AuthProvider = ({ children }) => {
             return null;
         }
     });
-
+    // after token state initialization
+    useEffect(() => {
+        if (token) {
+            setAuthToken(token);
+        }
+    }, [token]);
     const [token, setToken] = useState(
         () => localStorage.getItem("token") || null
     );
@@ -44,7 +49,7 @@ export const AuthProvider = ({ children }) => {
                 return [...prev, newUser]; // add to list
             });
         });
-        
+
         return () => {
             socket.off("new-user-registered");
         };

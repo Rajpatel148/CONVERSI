@@ -5,7 +5,7 @@ import { useAuth } from "../../context/Authcotext.jsx";
 
 const SignUp = ({ isSignIn, setIsSignIn }) => {
     const navigate = useNavigate();
-    const { signUp , uploadAvatar } = useAuth();
+    const { signUp , uploadAvatar ,socket} = useAuth();
 
     const [formData, setFormData] = useState({
         username: "",
@@ -29,7 +29,11 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
 
         try {
             const res = await signUp(formData);
-            io.emit("new-user-registered", res); 
+
+            // after successful signup
+            if (res?.user) {
+                socket?.emit("new-user-registered", res);
+            }
             if (res.success) {
                 navigate("/dashboard");
             }

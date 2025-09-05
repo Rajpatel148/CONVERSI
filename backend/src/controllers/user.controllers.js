@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const options = {
     httpOnly: true,
     secure: true,
+    sameSite:'none'
 };
 
 const generateAccessRefreshTokens = async (userId) => {

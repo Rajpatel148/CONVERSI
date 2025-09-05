@@ -1,11 +1,11 @@
 import { Server } from "socket.io";
 import { socketHandler } from "./socketHandler.js";
-
+import "dotenv/config";
 export const initServer = (server) => {
     let io = new Server(server, {
         cors: {
-            origin: "https://conversi-nine.vercel.app",
-            methods: ["GET", "POST"],
+            origin: `${process.env.FRONTEND_URL}`,
+            methods: ["GET", "POST", "PUT", "DELETE"],
             credentials: true,
         },
     });
