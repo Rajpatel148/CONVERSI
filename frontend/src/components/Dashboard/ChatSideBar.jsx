@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Ellipsis, MessageCircle, Plus, Search, Settings } from "lucide-react";
+import {
+    ArrowLeft,
+    Ellipsis,
+    MessageCircle,
+    Plus,
+    Search,
+    Settings,
+} from "lucide-react";
 import ChatBar from "./ChatBar";
 import Box from "@mui/material/Box";
 import "./ChatSideBar.css";
@@ -22,17 +29,36 @@ const ChatSideBar = () => {
         setNonFriends,
         createChat,
     } = useAuth();
-
     const [search, setSearch] = useState("");
+    const filteredChats = chatList?.filter((chat) => {
+        if (
+            chat.isGroup &&
+            chat.name?.toLowerCase().includes(search.toLocaleLowerCase())
+        )
+            return true;
+        if (Array.isArray(chat.members)) {
+            return chat.members.some((member) =>
+                member.fullname
+                    ?.toLowerCase()
+                    .includes(search.toLocaleLowerCase())
+            );
+        }
+        return false;
+    });
     const [nfSearch, setNfSearch] = useState("");
+    const filteredNonFriends = nonFriends?.filter((nf) =>
+        nf.fullname?.toLowerCase().includes(nfSearch.toLowerCase())
+    );
 
-    const navigate = useNavigate();
-    const [anchorEl, setAnchorEl] = useState(null);
-    const open = Boolean(anchorEl);
     // For Non friend list
     const [showNFlist, setShowNFlist] = useState(false);
 
     useEffect(() => {
+        socket.on("new-chat-created", (newChat) => {
+            setChatList((prev) => [newChat, ...prev]);
+            setNonFriends((prev) => prev.filter((nf) => !newChat.members.includes(nf._id)));
+        });
+
         socket.on("new-message-notification", async (data) => {
             let newlist = [...chatList]; // clone first
             let index = newlist.findIndex((c) => c._id === data.chatId);
@@ -62,47 +88,28 @@ const ChatSideBar = () => {
         });
 
         return () => {
+            socket.off("new-chat-created");
             socket.off("new-message-notification");
         };
     }, [chatList, activeChatId, user, setChatList, socket]);
 
-    const filteredChats = chatList.filter((chat) => {
-        if (
-            chat.isGroup &&
-            chat.name?.toLowerCase().includes(search.toLocaleLowerCase())
-        )
-            return true;
-        if (Array.isArray(chat.members)) {
-            return chat.members.some((member) =>
-                member.fullname
-                    ?.toLowerCase()
-                    .includes(search.toLocaleLowerCase())
-            );
-        }
-        return false;
-    });
-
-    const filteredNonFriends = nonFriends.filter((nf) =>
-        nf.fullname?.toLowerCase().includes(nfSearch.toLowerCase())
-    );
-
+    const [anchorEl, setAnchorEl] = useState(null);
+    const navigate = useNavigate();
+    const open = Boolean(anchorEl);
     // Menu handlers
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
     const handleClose = () => setAnchorEl(null);
-
     const handleViewProfile = () => {
         console.log("View profile clicked");
         handleClose();
     };
 
     const handleLogout = async () => {
-        console.log("Logout clicked");
-        // 🔥 You can clear token / context here
         try {
             await logout();
-            console.log("Log outed");
+            socket.emit("logout", user._id);
             navigate("/");
         } catch (error) {
             console.log(error);
@@ -110,6 +117,7 @@ const ChatSideBar = () => {
         handleClose();
     };
 
+    // Function to display "last seen" in human-readable format
     function timeAgo(dateString) {
         const now = new Date();
         const date = new Date(dateString);
@@ -143,8 +151,9 @@ const ChatSideBar = () => {
         };
 
         try {
-            const newChat = await createChat(data);
+            const newChat = await createChat(data); //! add socket event for new chat creation - emit message here 
 
+            socket.emit("new-chat-created", newChat);
             // 1. Add new chat at the beginning of chatList
             setChatList((prev) => [newChat, ...prev]);
             // 2. Remove nf from nfList
@@ -190,7 +199,6 @@ const ChatSideBar = () => {
                             />
                         </Box>
                     ) : (
-                        // New search bar with back button
                         <Box className="nf-search">
                             <button
                                 onClick={() => {
@@ -215,7 +223,7 @@ const ChatSideBar = () => {
                     <div className="chat-list">
                         {Array.isArray(filteredChats) &&
                             filteredChats.map((chat) => (
-                                <ChatBar key={chat._id} data={chat} />
+                                <ChatBar key={chat._id} chatUserData={chat} />
                             ))}
                     </div>
                 ) : (

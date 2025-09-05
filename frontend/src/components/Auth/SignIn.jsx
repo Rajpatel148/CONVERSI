@@ -6,6 +6,7 @@ const SignIn = ({ isSignIn, setIsSignIn }) => {
     const navigate = useNavigate();
     const { login, socket } = useAuth();
     const [formData, setFormData] = useState({
+        username: "",
         email: "",
         password: "",
     });
@@ -23,8 +24,8 @@ const SignIn = ({ isSignIn, setIsSignIn }) => {
         // Handle form submission logic here
 
         try {
-            const res = await login(formData);            
-            socket.emit("setup", res.newUser._id);
+            const res = await login(formData);     
+            socket.emit("setup", res?.newUser?._id);
             if (res.success) {
                 navigate("/dashboard");
             }

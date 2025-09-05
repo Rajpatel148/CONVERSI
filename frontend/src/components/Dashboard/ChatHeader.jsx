@@ -1,13 +1,54 @@
 import React from "react";
 import Avatar from "@mui/material/Avatar";
 import { EllipsisVertical, Phone, Video } from "lucide-react";
+import { useState } from "react";
+import { useEffect } from "react";
+import { useAuth } from "../../context/Authcotext";
 
 const ChatHeader = ({ data }) => {
+    const [userData, setUserData] = useState(data);
+    const { socket } = useAuth();
+    useEffect(() => {
+        socket.on("user-online", (id) => {
+            if (userData?.isGroup) return;
+            if (userData?.members?.[0]?._id === id) {
+                setUserData((prev) => ({
+                    ...prev,
+                    members: [
+                        {
+                            ...prev.members[0],
+                            isOnline: true,
+                        },
+                    ],
+                }));
+            }
+        });
+
+
+        socket.on("user-offline", (id) => {
+            if (userData?.isGroup) return;
+            if (userData?.members?.[0]?._id === id) {
+                setUserData((prev) => ({
+                    ...prev,
+                    members: [
+                        {
+                            ...prev.members[0],
+                            isOnline: false,
+                        },
+                    ],
+                }));
+            }
+        });
+        return () => {
+            socket.off("user-online");
+            socket.off("user-offline")
+        };
+    }, [socket, userData]);
     return (
         <div className="chat-window-header">
             <div className="header-profile">
                 <Avatar
-                    src={data?.avatar || ""}
+                    src={userData?.avatar || ""}
                     alt="Profile"
                     sx={{ width: "50px", height: "50px", objectFit: "cover" }}
                 />
@@ -17,14 +58,15 @@ const ChatHeader = ({ data }) => {
                             textTransform: "capitalize",
                         }}
                     >
-                        {data?.isGroup
-                            ? data?.name
-                            : data?.members?.[0]?.fullname || "Unknown User"}
+                        {userData?.isGroup
+                            ? userData?.name
+                            : userData?.members?.[0]?.fullname ||
+                              "Unknown User"}
                     </h4>
                     <p>
-                        {data?.isGroup
+                        {userData?.isGroup
                             ? ""
-                            : data?.members[0].isOnline
+                            : userData?.members[0].isOnline
                             ? "Online"
                             : "Offline"}
                     </p>

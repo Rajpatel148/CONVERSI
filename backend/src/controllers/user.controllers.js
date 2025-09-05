@@ -109,10 +109,15 @@ export const login = asyncHandler(async (req, res) => {
         user._id
     );
     //send cookie
-    const loggedUser = await User.findById(user._id).select(
-        "-password -refreshToken"
-    );
-
+    const loggedUser = await User.findByIdAndUpdate(
+        user._id,
+        {
+            isOnline: true,
+        },
+        {
+            new: true,
+        }
+    ).select("-password -refreshToken");
     //send response
     return res
         .status(200)
@@ -192,21 +197,21 @@ export const changePassword = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "Password is change successfully"));
 });
 
-export const changeAvatar = asyncHandler(async(req,res)=>{
+export const changeAvatar = asyncHandler(async (req, res) => {
     //get url from frontend after uploading on clouinary
-    const {avatar} = req.body;
-    if(!avatar){
-        throw new ApiError(400,"Avatar url is require");
+    const { avatar } = req.body;
+    if (!avatar) {
+        throw new ApiError(400, "Avatar url is require");
     }
 
-    // find user by id 
-    const user = await User.findByIdAndUpdate(req.user._id,{
-        $set:{
-            avatar:avatar,
-        }
-    })
+    // find user by id
+    const user = await User.findByIdAndUpdate(req.user._id, {
+        $set: {
+            avatar: avatar,
+        },
+    });
 
-    return res.status(200).json(
-        new ApiResponse(201,{},"Avatar change successfully")
-    )
-})
+    return res
+        .status(200)
+        .json(new ApiResponse(201, {}, "Avatar change successfully"));
+});

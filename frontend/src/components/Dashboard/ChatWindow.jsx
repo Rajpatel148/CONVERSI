@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import ChatHeader from "./ChatHeader";
 import "./ChatWindow.css";
-import { Avatar, Box } from "@mui/material";
+import { Box } from "@mui/material";
 import { Paperclip, Send, Smile } from "lucide-react";
 import { useAuth } from "../../context/Authcotext";
 import SingleMessage from "./SingleMessage.jsx/";
 import EmojiPicker from "emoji-picker-react";
+import { useRef } from "react";
 
 const ChatWindow = () => {
     const {
@@ -18,22 +19,17 @@ const ChatWindow = () => {
         setSending,
         activeChatId: chatId,
         chatList,
-        isOtherUserTyping,
+        setChatList,
         setIsOtherUserTyping,
         nonFriends,
     } = useAuth();
-    const [chatData, setChatData] = useState(null);
-    const [message, setMessage] = useState("");
-    const [typing, settyping] = useState(false);
-    const currentChatUser =
-        chatList?.find((c) => c._id === chatId) ||
-        nonFriends.filter((nf) => nf._id == chatId)[0];
-    const [emojisVisible, setEmojisVisible] = useState(false);
 
+    // Fetch chat data
+    const [chatData, setChatData] = useState(null);
     const fetchChat = async () => {
         try {
             const response = await chat(chatId);
-            setChatData(response.data);
+            setChatData(response);
         } catch (error) {
             setChatData(null);
         }
@@ -43,8 +39,43 @@ const ChatWindow = () => {
         fetchChat();
     }, [chatId]);
 
+    // Message input state
+    const [message, setMessage] = useState("");
+    const [typing, settyping] = useState(false);
+    const currentChatUser =
+        chatList?.find((c) => c._id === chatId) ||
+        nonFriends.filter((nf) => nf._id == chatId)[0];
+    const [emojisVisible, setEmojisVisible] = useState(false);
+    const prevChatIdRef = useRef(null);
+
+    // Scroll to bottom on new message
+    const messagesEndRef = useRef(null);
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatData]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     // DEfine socket events
     useEffect(() => {
+        // leave the previous room
+        if (prevChatIdRef.current && prevChatIdRef.current !== chatId) {
+            socket.emit("leave-chat", prevChatIdRef.current);
+        }
+
+        socket.emit("join-chat", { roomId: chatId, userId: user._id });
+
+        socket.on("new-message-notification", async (data) => {
+            try {
+                // await send(data);
+                console.log("New message notification received:", data);
+            } catch (error) {
+                console.log(error);
+            }
+        });
+
         socket.on("user-joined-room", (userId) => {
             const updatedList = chatData.map((msg) => {
                 if (msg.senderId === user._id && userId !== user._id) {
@@ -74,64 +105,68 @@ const ChatWindow = () => {
             }
         });
         socket.on("receive-message", (data) => {
+            // 1. Update chatData (open chat window messages)
             setChatData((prev) => {
-                // Scroll after state update
-                setTimeout(() => {
-                    const chatBox = document.getElementById("chat-box");
-                    if (chatBox) {
-                        chatBox.scrollTo({
-                            top: chatBox.scrollHeight,
-                            behavior: "smooth",
-                        });
-                    }
-                }, 50);
+                if (!prev) return [data]; // first message
+                if (prev.find((msg) => msg._id === data._id)) return prev; // avoid duplicates
                 return [...prev, data];
             });
-        });
 
-        socket.on("message-deleted", (data) => {
-            const { messageId } = data;
-            setChatData((prev) => prev.filter((msg) => msg._id !== messageId));
+            // 2. Update latest message in chatList (sidebar)
+            setChatList((prevChats) => {
+                return prevChats.map((chat) => {
+                    if (chat._id === data.chatId) {
+                        return {
+                            ...chat,
+                            latestMsg: data.text ? data.text : "📷 Image",
+                        };
+                    }
+                    return chat;
+                });
+            });
+
+            // 3. Scroll to bottom of chat window
+            scrollToBottom();
+            socket.on("message-deleted", (data) => {
+                const { messageId } = data;
+                setChatData((prev) =>
+                    prev.filter((msg) => msg._id !== messageId)
+                );
+            });
         });
+        prevChatIdRef.current = chatId;
         return () => {
             socket.off("typing");
             socket.off("stop-typing");
             socket.off("receive-message");
             socket.off("message-deleted");
+            socket.off("user-joined-room");
+            socket.off("new-message-notification");
         };
     }, [socket, chatData, setChatData, user._id, setIsOtherUserTyping]);
 
     const handleSend = async () => {
         if (!message.trim()) return;
         setSending(true);
-        socket.emit("stop-typing", {
-            typer: user._id,
-            chatId,
-        });
         try {
-            // await send({
-            //     chatId,
-            //     text: message,
-            //     senderId: user?._id,
-            // });
-            socket.emit("send-message", {
+            const sendedMsg = await send({
                 chatId,
                 text: message,
-                senderId: user._id,
+                senderId: user?._id,
             });
+
+            // Optimistically update local state for sender
+            setChatData((prev) => [...(prev || []), sendedMsg]);
+
+            // Tell server to broadcast
+            socket.emit("send-message", chatId);
+
             setMessage("");
-            fetchChat();
+            scrollToBottom();
         } catch (error) {
             console.log(error);
         }
         setSending(false);
-
-        setTimeout(() => {
-            document.getElementById("chat-box")?.scrollTo({
-                top: document.getElementById("chat-box").scrollHeight,
-                behavior: "smooth",
-            });
-        }, 100);
     };
 
     const handleEmojiClick = (emojiData, event) => {
@@ -146,16 +181,22 @@ const ChatWindow = () => {
         try {
             const imageUrl = await uploadAvatar(file);
             if (!imageUrl) throw new Error();
-            await send({
+            const sendedMsg = await send({
                 chatId,
                 imageUrl,
                 senderId: user._id,
             });
+            // Optimistically update local state for sender
+            setChatData((prev) => [...(prev || []), sendedMsg]);
+
+            // Tell server to broadcast
+            socket.emit("send-message", chatId);
+
+            scrollToBottom();
         } catch (error) {
             // Optionally show error
             console.log(error);
         }
-        fetchChat();
         setSending(false);
     };
 
@@ -175,9 +216,6 @@ const ChatWindow = () => {
         }
     };
 
-    const removeMessageFromList = (messageId) => {
-        setChatData((prev) => prev.filter((msg) => msg._id !== messageId));
-    };
     return (
         <div className="chat-window">
             {/* Chat Header */}
@@ -200,7 +238,6 @@ const ChatWindow = () => {
                                 key={msg._id || msg.id}
                                 msg={msg}
                                 fetchChat={fetchChat}
-                                removeMessageFromList={removeMessageFromList}
                             />
                         );
                     })
@@ -209,6 +246,7 @@ const ChatWindow = () => {
                         No messages yet.
                     </p>
                 )}
+                <div ref={messagesEndRef} />
             </Box>
 
             {/* Input field */}

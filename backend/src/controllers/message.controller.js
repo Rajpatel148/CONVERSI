@@ -27,6 +27,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
 
     await newMessage.save();
+    chat.latestMsg = text ? text : "New image";
     chat.updatedAt = new Date();
     await chat.save();
 
@@ -91,52 +92,19 @@ export const deleteMessage = asyncHandler(async (req, res) => {
 
 export const sendMessageHandler = async (data) => {
     try {
-        const {
-            text,
-            imageUrl,
-            senderId,
-            chatId,
-            receiverId,
-            isReceiverInsideChatRoom,
-        } = data;
+        const { text, imageUrl, senderId, chatId } = data;
 
-        // Get the chat
-        const chat = await Chat.findById(chatId);
-
-        // Create a new message
         const newMsg = await Message.create({
             chatId,
             senderId,
             text,
             imageUrl,
-            seenBy: isReceiverInsideChatRoom
-                ? [
-                      {
-                          user: receiverId,
-                          seenAt: new Date(),
-                      },
-                  ]
-                : [],
-        });
-
-        // update the chat lesg mesg
-        chat.latestMsg = text ? text : "new image";
-
-        // if receiver is not in chatroom so increament the unreadcount
-        if (!isReceiverInsideChatRoom) {
-            chat.unreadCounts.map((unread) => {
-                if (unread.userId.toString() == receiverId.toString()) {
-                    unread.count += 1;
-                }
-            });
-        }
-
-        // Save the chat
-        await chat.save();
+            seenBy: [],
+        }).populate("senderId");
 
         return newMsg;
     } catch (error) {
-        console.log(error);
+        console.log("sendMessageHandler error:", error);
     }
 };
 

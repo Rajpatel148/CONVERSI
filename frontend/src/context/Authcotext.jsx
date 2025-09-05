@@ -23,27 +23,6 @@ export const AuthProvider = ({ children }) => {
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
     const [nonFriends, setNonFriends] = useState([]);
 
-    useEffect(() => {
-        const fetchChats = async () => {
-            try {
-                const chatData = await myChatlist();
-                setChatList(chatData.data);
-            } catch (error) {
-                console.error("Error fetching chats:", error);
-            }
-        };
-
-        const fetchNFChats = async () => {
-            try {
-                const nfData = await nonFriendsList();
-                setNonFriends(nfData);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchChats();
-        fetchNFChats();
-    }, []);
     const [user, setUser] = useState(() => {
         try {
             const raw = localStorage.getItem("user");
@@ -56,7 +35,20 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(
         () => localStorage.getItem("token") || null
     );
-    // const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        socket.on("new-user-registered", (newUser) => {
+            setNonFriends((prev) => {
+                const exists = prev.find((nf) => nf._id === newUser._id);
+                if (exists) return prev; // already present
+                return [...prev, newUser]; // add to list
+            });
+        });
+        
+        return () => {
+            socket.off("new-user-registered");
+        };
+    }, [socket, setNonFriends, setChatList]);
 
     const login = async (data) => {
         try {
@@ -129,17 +121,18 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const createChat = async(data)=>{
+    const createChat = async (data) => {
         try {
             const response = await createNewChat(data);
             return response.data;
         } catch (error) {
             console.log(error);
         }
-    }
+    };
     const send = async (msgData) => {
         try {
             const res = await sendMsg(msgData);
+            return res.data;
         } catch (error) {
             throw error;
         }
@@ -212,6 +205,7 @@ export const AuthProvider = ({ children }) => {
             nonFriends,
             setNonFriends,
             createChat,
+            nonFriendsList,
         }),
         [
             user,
@@ -236,6 +230,7 @@ export const AuthProvider = ({ children }) => {
             nonFriends,
             setNonFriends,
             createChat,
+            nonFriendsList,
         ]
     );
 

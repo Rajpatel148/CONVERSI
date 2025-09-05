@@ -97,6 +97,7 @@ export const getNonFriendList = async () => {
 export const createNewChat = async (data) => {
     try {
         const res = await api.post("/chat/create", data);
+        console.log(res.data);
         return res.data;
     } catch (error) {
         console.log(error);

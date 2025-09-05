@@ -1,17 +1,17 @@
 import Avatar from "@mui/material/Avatar";
 import { useAuth } from "../../context/Authcotext";
 
-const ChatBar = ({ data }) => {
+const ChatBar = ({ chatUserData }) => {
     const { user,activeChatId, setActiveChatId, socket } = useAuth();
-    const isGroup = data?.isGroup;
+    const isGroup = chatUserData?.isGroup;
     const name = isGroup
-        ? data?.name || "Unnamed Group"
-        : data?.members?.[0]?.fullname || "Unknown User";
+        ? chatUserData?.name || "Unnamed Group"
+        : chatUserData?.members?.[0]?.fullname || "Unknown User";
 
-    const avatarSrc = data?.members?.[0]?.avatar || "";
-    const latestMsg = data?.latestMsg || "No messages yet";
-    const unreadCount = Array.isArray(data?.unreadCounts)
-        ? data.unreadCounts.length
+    const avatarSrc = chatUserData?.members?.[0]?.avatar || "";
+    const latestMsg = chatUserData?.latestMsg || "No messages yet";
+    const unreadCount = Array.isArray(chatUserData?.unreadCounts)
+        ? chatUserData.unreadCounts.length
         : 0;
 
     // Handleopen
@@ -23,7 +23,7 @@ const ChatBar = ({ data }) => {
             });
 
             await socket.emit("leave-chat", activeChatId);
-            setActiveChatId(data._id);
+            setActiveChatId(chatUserData._id);
         } catch (error) {
             console.log(error);
         }
@@ -34,7 +34,7 @@ const ChatBar = ({ data }) => {
             onClick={handleChatOpen}
             style={{
                 backgroundColor:
-                    activeChatId === data._id && "rgba(10, 153, 67, 0.578)",
+                    activeChatId === chatUserData._id && "rgba(10, 153, 67, 0.578)",
                 cursor: "pointer",
             }}
         >

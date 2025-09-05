@@ -59,6 +59,7 @@ input {
     border: none;
     outline: none;
     color: white;
+    cursor: pointer;
     background-color: green;
     padding: 10px;
     font-weight: 500;

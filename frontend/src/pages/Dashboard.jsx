@@ -12,11 +12,11 @@ const Dashboard = () => {
     const {
         user,
         loading,
-        myChatlist,
         activeChatId,
-        setActiveChatId,
-        chatList,
+        myChatlist,
         setChatList,
+        nonFriendsList,
+        setNonFriends,
     } = useAuth();
 
     useEffect(() => {
@@ -24,6 +24,28 @@ const Dashboard = () => {
             navigate("/");
         }
     }, []);
+
+     useEffect(() => {
+             const fetchChats = async () => {
+                 try {
+                     const chatData = await myChatlist();
+                     setChatList(chatData.data);
+                 } catch (error) {
+                     console.error("Error fetching chats:", error);
+                 }
+             };
+
+             const fetchNFChats = async () => {
+                 try {
+                     const nfData = await nonFriendsList();
+                     setNonFriends(nfData);
+                 } catch (error) {
+                     console.log(error);
+                 }
+             };
+             fetchChats();
+             fetchNFChats();
+     }, []);
     if (loading) {
         //! use Skeleton here https://mui.com/material-ui/react-skeleton/
         return <div>Loading...</div>;

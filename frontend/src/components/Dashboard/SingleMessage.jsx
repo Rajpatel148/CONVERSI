@@ -38,7 +38,6 @@ const SingleMessage = ({ msg, fetchChat }) => {
             });
             fetchChat();
         } catch (error) {
-            // Optionally show error
             console.log(error);
         }
     };

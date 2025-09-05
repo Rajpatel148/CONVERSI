@@ -29,6 +29,7 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
 
         try {
             const res = await signUp(formData);
+            io.emit("new-user-registered", res); 
             if (res.success) {
                 navigate("/dashboard");
             }

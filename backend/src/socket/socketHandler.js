@@ -4,7 +4,7 @@ import {
 } from "../controllers/message.controller.js";
 import { Chat } from "../models/chat.models.js";
 import { Message } from "../models/message.models.js";
-import { User} from "../models/user.models.js"
+import { User } from "../models/user.models.js";
 // add message controller
 
 export const socketHandler = async (io, socket) => {
@@ -12,12 +12,18 @@ export const socketHandler = async (io, socket) => {
 
     // SEt up
     socket.on("setup", async (id) => {
-        console.log("User id received",id)
-        currentUserId = id;
-        socket.join(id);
-        console.log("User joins personal room", id);
-        await User.findByIdAndUpdate(id, { isOnline: true });
-        socket.emit("user setup", id);
+        try {
+            currentUserId = id;
+            socket.join(id);
+            const user = await User.findByIdAndUpdate(
+                id,
+                { isOnline: true },
+                { new: true }
+            ).select("-password -refreshToken");
+            io.emit("user-online", id);
+        } catch (error) {
+            console.log(error);
+        }
     });
 
     //Join the chat room
@@ -35,58 +41,34 @@ export const socketHandler = async (io, socket) => {
         socket.leave(room);
     });
 
-    const handleSendMessage = async (data) => {
-        try {
-            const { chatId, senderId, text, imageUrl } = data;
-    
-            const chat = await Chat.findById(chatId).populate("members");
-    
-            if(!chat){
-                console.log("Chat is not found so handle by socket ");
-            }
-    
-            const receiverId = chat.members.find(
-                (member) => member._id != senderId
-            )._id;
-            
-            const receiverPersonalRoom = io.sockets.adapter.rooms.get(
-                receiverId.toString()
-            );
-    
-            let isReceiverInsideChatRoom = false;
-    
-            if (receiverPersonalRoom) {
-                const receiverSid = Array.from(receiverPersonalRoom)[0];
-                isReceiverInsideChatRoom = io.sockets.adapter.rooms
-                    .get(chatId)
-                    .has(receiverSid);
-            }
-    
-            const message = await sendMessageHandler({
-                text,
-                imageUrl,
-                senderId,
-                chatId,
-                receiverId,
-                isReceiverInsideChatRoom,
-            });
-    
-            io.to(chatId).emit("receive-message", message);
-            // sending notification to receiver
-            if (!isReceiverInsideChatRoom) {
-                console.log("Emitting new message to: ", receiverId.toString());
-                io.to(receiverId.toString()).emit(
-                    "new-message-notification",
-                    message
-                );
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
     // Send message
-    socket.on("send-message", handleSendMessage);
+    socket.on("send-message", async (chatId) => {
+        try {
+            const latestMessage = await Message.findOne({ chatId })
+                .sort({ createdAt: -1 })
+                .populate("senderId");
+
+            if (!latestMessage) return;
+
+            io.to(chatId).emit("receive-message", latestMessage);
+
+            // Optional: notify others
+            const chat = await Chat.findById(chatId).populate("members");
+            chat.members.forEach((member) => {
+                if (
+                    member._id.toString() !==
+                    latestMessage.senderId._id.toString()
+                ) {
+                    io.to(member._id.toString()).emit(
+                        "new-message-notification",
+                        latestMessage
+                    );
+                }
+            });
+        } catch (err) {
+            console.log("send-message error:", err);
+        }
+    });
 
     const handleDeleteMessage = async (data) => {
         const { messageId, userIDS, chatId } = data;
@@ -109,12 +91,26 @@ export const socketHandler = async (io, socket) => {
         io.to(data.chatId).emit("stop-typing", data);
     });
 
-    // Disconnect
-    socket.on("disconnect", async () => {
-        await User.findByIdAndUpdate(currentUserId, {
-            isOnline: false,
-            lastSeen: new Date(),
-        });
-        // notify conversation rooms
+    // Disconnect like logout
+    socket.on("logout", async (id) => {
+        try {
+            // Update user status
+            const user = await User.findByIdAndUpdate(
+                id,
+                {
+                    isOnline: false,
+                    lastSeen: new Date(),
+                },
+                { new: true }
+            );
+            // ✅ Let everyone else know this user went offline
+            // Emit to all connected clients
+            io.emit("user-offline", id);
+
+            // Optionally leave personal room
+            socket.leave(id);
+        } catch (err) {
+            console.error("Logout handler error:", err);
+        }
     });
 };
