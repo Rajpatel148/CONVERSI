@@ -4,8 +4,8 @@ import { Box, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import { Send } from "lucide-react";
-import ChatSideBar from "../components/dashboard/ChatSideBar.jsx";
-import ChatWindow from "../components/dashboard/ChatWindow.jsx";
+import ChatSideBar from "../components/Dashboard/ChatSideBar.jsx";
+import ChatWindow from "../components/Dashboard/ChatWindow.jsx";
 import useIsMobile from "../hook/useIsMobile.jsx";
 
 const Dashboard = () => {
