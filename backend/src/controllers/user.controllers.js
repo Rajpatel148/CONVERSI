@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const options = {
     httpOnly: true,
     secure: true,
-    sameSite:'none'
+    sameSite: "none",
 };
 
 const generateAccessRefreshTokens = async (userId) => {
@@ -51,7 +51,7 @@ export const signup = asyncHandler(async (req, res) => {
     //check user is exists or not
     const existedUser = await User.findOne({
         $or: [{ username }, { email }],
-    });
+    }).select("-password -refreshToken");
 
     if (existedUser) {
         throw new ApiError(409, "User is already exists");
@@ -64,20 +64,35 @@ export const signup = asyncHandler(async (req, res) => {
         email,
         password,
         avatar,
+        isOnline:true
     });
 
     // store the user
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
-
+    const { accessToken, refreshToken } = await generateAccessRefreshTokens(
+        user._id
+    );
     if (!createdUser) {
         throw new ApiError(400, "Something went wrong while creating User ");
     }
     // return the respo
     return res
         .status(200)
-        .json(new ApiResponse(200, createdUser, "User register successfully"));
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: createdUser,
+                    refreshToken,
+                    accessToken,
+                },
+                "User register successfully"
+            )
+        );
 });
 
 export const login = asyncHandler(async (req, res) => {

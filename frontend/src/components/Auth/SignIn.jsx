@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../context/Authcotext.jsx";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const SignIn = ({ isSignIn, setIsSignIn }) => {
     const navigate = useNavigate();
@@ -24,13 +25,19 @@ const SignIn = ({ isSignIn, setIsSignIn }) => {
         // Handle form submission logic here
 
         try {
-            const res = await login(formData);     
-            if (res.success) {
+            const res = await login(formData);
+            if (res?.success && res?.newUser?._id) {
+                socket.emit("setup", res.newUser._id);
                 navigate("/dashboard");
-                socket.emit("setup", res?.newUser?._id);
+                toast.success("Welcome back!");
+            }
+            if(!res?.success){
+                toast.error("Invalid credentials");
+                return;
             }
         } catch (error) {
             console.log(error);
+            toast.error("Login failed");
         }
         // Reset form fields
         setFormData({

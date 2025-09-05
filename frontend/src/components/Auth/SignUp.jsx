@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/Authcotext.jsx";
-
+import toast from "react-hot-toast";
 
 const SignUp = ({ isSignIn, setIsSignIn }) => {
     const navigate = useNavigate();
-    const { signUp , uploadAvatar ,socket} = useAuth();
+    const { signUp, uploadAvatar, socket } = useAuth();
 
     const [formData, setFormData] = useState({
         username: "",
@@ -31,13 +31,17 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
             const res = await signUp(formData);
 
             // after successful signup
-            if (res?.user) {
-                socket?.emit("new-user-registered", res);
+            if (res?.success && res?.newUser?._id) {
+                socket.emit("new-user-registered", res.newUser);
             }
-            if (res.success) {
+            if (res?.success) {
+                toast.success("Welcome to Conversi!");
                 navigate("/dashboard");
+            }else{
+                toast.error("Sign up failed");
             }
         } catch (error) {
+            toast.error("Sign up failed");
             console.log(error);
         }
         // Reset form fields
@@ -49,20 +53,27 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
         });
     };
 
-    const handleUpload = async (e) =>{
-        const file  = e.target.files[0];
-        if(!file) return;
+    const handleUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
         const avatarUrl = await uploadAvatar(file);
         setFormData((prevData) => ({
             ...prevData,
             avatar: avatarUrl,
         }));
-    }
+    };
     return (
         <form className="signUpForm">
             <label htmlFor="avatar">Avatar</label>
-            <input type="file" id="avatar" name="avatar" accept="image/*" onChange={handleUpload} required/> 
+            <input
+                type="file"
+                id="avatar"
+                name="avatar"
+                accept="image/*"
+                onChange={handleUpload}
+                required
+            />
             <label htmlFor="username">Username</label>
             <input
                 type="text"

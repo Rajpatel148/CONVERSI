@@ -1,20 +1,9 @@
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { io } from "socket.io-client";
-import { useEffect } from "react";
 import Error from "./pages/Error.jsx";
-import { useAuth } from "./context/Authcotext.jsx";
-
+import { Toaster } from "react-hot-toast";
 const App = () => {
-    const { socket } = useAuth();
-    useEffect(() => {
-        socket.on("connect", () => {});
-
-        return () => {
-            socket.disconnect();
-        };
-    }, []);
     const router = createBrowserRouter([
         {
             path: "/",
@@ -31,6 +20,14 @@ const App = () => {
     return (
         <>
             <RouterProvider router={router} />
+            <Toaster
+                position="bottom-right"
+                reverseOrder={false}
+                toastOptions={{
+                    duration: 2500,
+                    style: { fontSize: "14px" }
+                }}
+            />
         </>
     );
 };

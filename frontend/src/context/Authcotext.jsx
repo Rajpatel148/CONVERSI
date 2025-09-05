@@ -12,29 +12,38 @@ import {
     signUpRequest,
 } from "../api/axios";
 import io from "socket.io-client";
-let socket = io(import.meta.env.VITE_BASE_URL);
+import toast from "react-hot-toast";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    const socket = useMemo(
+        () =>
+            io(import.meta.env.VITE_BASE_URL, {
+                transports: ["websocket"],
+                withCredentials: true,
+            }),
+        []
+    );
+
+    const [token, setToken] = useState(
+        () => localStorage.getItem("token") || null
+    );
+    const [user, setUser] = useState(() => {
+        try {
+            const raw = localStorage.getItem("user");
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    });
+
     const [chatList, setChatList] = useState([]);
     const [activeChatId, setActiveChatId] = useState("");
     const [sending, setSending] = useState(false);
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
     const [nonFriends, setNonFriends] = useState([]);
 
-    const [user, setUser] = useState(() => {
-        try {
-            const raw = localStorage.getItem("user");
-            return raw ? JSON.parse(raw) : null;
-        } catch (error) {
-            return null;
-        }
-    });
-    const [token, setToken] = useState(
-        () => localStorage.getItem("token") || null
-    );
-    // after token state initialization
     useEffect(() => {
         if (token) {
             setAuthToken(token);
@@ -45,147 +54,188 @@ export const AuthProvider = ({ children }) => {
         socket.on("new-user-registered", (newUser) => {
             setNonFriends((prev) => {
                 const exists = prev.find((nf) => nf._id === newUser._id);
-                if (exists) return prev; // already present
-                return [...prev, newUser]; // add to list
+                if (exists) return prev;
+                return [...prev, newUser];
             });
         });
 
         return () => {
             socket.off("new-user-registered");
         };
-    }, [socket, setNonFriends, setChatList]);
+    }, [socket]);
 
+    // ✅ LOGIN
     const login = async (data) => {
+        const promise = loginRequest(data);
+
+        toast.promise(promise, {
+            loading: "Logging in...",
+            success: "Logged in successfully",
+            error: (e) => e?.response?.data?.message || "Failed to log in",
+        });
+
         try {
-            const { token: newToken, user: newUser } = await loginRequest(data);
-            if (newToken) {
-                setToken(newToken);
-                localStorage.setItem("token", newToken);
-                setAuthToken(newToken);
-            }
-            if (newUser) {
-                setUser(newUser);
-                localStorage.setItem("user", JSON.stringify(newUser));
-            }
+            const { token: newToken, user: newUser } = await promise;
+            if (!newToken || !newUser) return { success: false };
+
+            setToken(newToken);
+            localStorage.setItem("token", newToken);
+            setAuthToken(newToken);
+            setUser(newUser);
+            localStorage.setItem("user", JSON.stringify(newUser));
+
             return { success: true, newUser, newToken };
-        } catch (error) {
-            throw error;
+        } catch {
+            return { success: false };
         }
     };
 
+    // ✅ SIGN UP
     const signUp = async (data) => {
+        const promise = signUpRequest(data);
+
+        toast.promise(promise, {
+            loading: "Creating account...",
+            success: "Account created",
+            error: (e) => e?.response?.data?.message || "Failed to sign up",
+        });
+
         try {
-            const { user: newUser, token: newToken } = await signUpRequest(
-                data
-            );
-            if (newToken) {
-                setToken(newToken);
-                localStorage.setItem("token", newToken);
-                setAuthToken(newToken);
-            }
-            if (newUser) {
-                setUser(newUser);
-                localStorage.setItem("user", JSON.stringify(newUser));
-            }
+            const { token: newToken, user: newUser } = await promise;
+            if (!newToken || !newUser) return { success: false };
+
+            setToken(newToken);
+            localStorage.setItem("token", newToken);
+            setAuthToken(newToken);
+            setUser(newUser);
+            localStorage.setItem("user", JSON.stringify(newUser));
+
             return { success: true, newUser, newToken };
-        } catch (error) {
-            throw error;
+        } catch {
+            return { success: false };
         }
     };
 
+    // ✅ LOGOUT
     const logout = async () => {
+        const promise = logOutClient();
+
+        toast.promise(promise, {
+            loading: "Logging out...",
+            success: "Logged out",
+            error: "Failed to log out",
+        });
+
         try {
-            await logOutClient();
+            await promise;
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             setToken(null);
             setUser(null);
-        } catch (error) {
-            console.log(error);
+        } catch {
+            // toast already shown
         }
     };
 
+    // ✅ FETCH CHAT LIST
     const myChatlist = async () => {
         try {
             const res = await getChatlist();
+            if (res?.error || res?.success === false) {
+                toast.error(res?.message || "Failed to fetch chats");
+            }
             return res;
         } catch (error) {
+            toast.error("Failed to fetch chats");
             throw error;
         }
     };
 
+    // ✅ FETCH CHAT BY ID
     const chat = async (chatId) => {
-        // setLoading(true);
         try {
             const res = await getChat(chatId);
-            // setLoading(false);
             return res.data;
         } catch (error) {
-            // setLoading(false);
+            toast.error("Failed to fetch chat");
             throw error;
         }
     };
 
+    // ✅ CREATE NEW CHAT
     const createChat = async (data) => {
         try {
-            const response = await createNewChat(data);
-            return response.data;
+            const res = await createNewChat(data);
+            toast.success("Chat created");
+            return res.data;
         } catch (error) {
-            console.log(error);
+            toast.error("Failed to create chat");
         }
     };
+
+    // ✅ SEND MESSAGE
     const send = async (msgData) => {
         try {
             const res = await sendMsg(msgData);
             return res.data;
         } catch (error) {
+            toast.error("Failed to send message");
             throw error;
         }
     };
 
+    // ✅ DELETE MESSAGE
     const deleteMessage = async (msgData) => {
         try {
             const res = await deleteMsg(msgData);
+            toast.success("Message deleted");
         } catch (error) {
+            toast.error("Failed to delete message");
             throw error;
         }
     };
 
+    // ✅ UPLOAD AVATAR (Cloudinary)
     const uploadAvatar = async (file) => {
-        //upload to cloudinary
+        const id = toast.loading("Uploading avatar...");
         const formData = new FormData();
         formData.append("file", file);
         formData.append(
             "upload_preset",
-            `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`
+            import.meta.env.VITE_CLOUDINARY_PRESET_NAME
         );
-        formData.append("cloud_name", `${import.meta.env.VITE_CLOUD_NAME}`);
+        formData.append("cloud_name", import.meta.env.VITE_CLOUD_NAME);
+
         try {
             const response = await fetch(
                 `https://api.cloudinary.com/v1_1/${
                     import.meta.env.VITE_CLOUD_NAME
                 }/image/upload`,
-                {
-                    method: "POST",
-                    body: formData,
-                }
+                { method: "POST", body: formData }
             );
+
             const data = await response.json();
-            console.log(data.secure_url);
+            toast.success("Avatar uploaded");
             return data.secure_url;
         } catch (error) {
-            console.error("Error uploading image:", error);
+            toast.error("Avatar upload failed");
+            throw error;
+        } finally {
+            toast.dismiss(id);
         }
     };
 
+    // ✅ FETCH NON-FRIENDS
     const nonFriendsList = async () => {
         try {
-            const response = await getNonFriendList();
-            return response;
-        } catch (error) {
-            console.log(error);
+            const res = await getNonFriendList();
+            if (res?.error) toast.error("Failed to fetch non-friends");
+            return res;
+        } catch {
+            toast.error("Failed to fetch non-friends");
         }
     };
+
     const contextValue = useMemo(
         () => ({
             user,
@@ -215,27 +265,11 @@ export const AuthProvider = ({ children }) => {
         [
             user,
             token,
-            login,
-            logout,
-            signUp,
-            myChatlist,
-            chat,
-            send,
-            deleteMessage,
-            uploadAvatar,
-            socket,
             chatList,
-            setChatList,
             activeChatId,
-            setActiveChatId,
             sending,
-            setSending,
             isOtherUserTyping,
-            setIsOtherUserTyping,
             nonFriends,
-            setNonFriends,
-            createChat,
-            nonFriendsList,
         ]
     );
 
@@ -245,4 +279,5 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
 export const useAuth = () => useContext(AuthContext);

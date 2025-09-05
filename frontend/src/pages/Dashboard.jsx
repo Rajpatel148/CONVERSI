@@ -8,6 +8,7 @@ import ChatSideBar from "../components/Dashboard/ChatSideBar.jsx";
 import ChatWindow from "../components/Dashboard/ChatWindow.jsx";
 import useIsMobile from "../hook/useIsMobile.jsx";
 
+
 const Dashboard = () => {
     const navigate = useNavigate();
     const isMobile = useIsMobile();

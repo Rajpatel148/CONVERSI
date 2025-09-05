@@ -2,6 +2,7 @@ import { Avatar, Box } from "@mui/material";
 import { Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../context/Authcotext";
+import toast from "react-hot-toast";
 
 const SingleMessage = ({ msg, fetchChat }) => {
     const { deleteMessage, user, socket, activeChatId } = useAuth();
@@ -31,16 +32,30 @@ const SingleMessage = ({ msg, fetchChat }) => {
 
     const handleDelete = async (msgData) => {
         try {
-            const res = await deleteMessage(msgData);
-            await socket.emit("delete-message", {
+            // Wrap the deletion request in a toast
+            const p = deleteMessage(msgData);
+
+            toast.promise(p, {
+                loading: "Deleting...",
+                success: "Message deleted",
+                error: "Failed to delete",
+            });
+
+            await p;
+
+            // Notify the server about the deleted message
+            socket.emit("delete-message", {
                 ...msgData,
                 activeChatId,
             });
+
+            // Refresh chat after deletion
             fetchChat();
         } catch (error) {
-            console.log(error);
+            console.error(error);
         }
     };
+
     return (
         <Box
             style={{

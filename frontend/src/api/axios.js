@@ -1,4 +1,5 @@
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_API_URL,
@@ -18,46 +19,37 @@ export const setAuthToken = (token) => {
     }
 };
 
-// Always attach token if present (covers hard reloads)
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers = config.headers || {};
-      if (!config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+api.interceptors.response.use(
+    (res) => res,
+    (error) => {
+        if (!error.response) {
+            toast.error("Network error");
+        } else if (error.response.status === 401) {
+            toast.error("Session expired. Please log in again.");
+        }
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
 );
 
 export const loginRequest = async (data) => {
-    let token = null;
-    let user = null;
     try {
         const res = await api.post("/user/login", data);
-        user = res.data.data.user || null;
-        token = res.data.accessToken || null;
+        const user = res.data?.data?.user;
+        const token = res.data?.data?.accessToken;
         if (token) setAuthToken(token);
+        return { token, user };
     } catch (error) {
-        console.error(
-            "Login Error:",
-            error.response ? error.response.data : error.message
-        );
+        console.log(error);
     }
-    return { token, user, data };
 };
 
 export const signUpRequest = async (data) => {
-    let token = null;
-    let user = null;
     try {
         const res = await api.post("/user/signup", data);
-        user = res.data.data.user || null;
-        token = res.data.accessToken || null;
+        const user = res.data?.data?.user || null;
+        const token = res.data?.data?.accessToken || null;
         if (token) setAuthToken(token);
+        return { token, user };
     } catch (error) {
         console.error(
             "SignUp Error:",

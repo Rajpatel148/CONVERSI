@@ -7,6 +7,7 @@ import { useAuth } from "../../context/Authcotext";
 import SingleMessage from "./SingleMessage.jsx/";
 import EmojiPicker from "emoji-picker-react";
 import { useRef } from "react";
+import toast from "react-hot-toast";
 
 const ChatWindow = () => {
     const {
@@ -149,26 +150,36 @@ const ChatWindow = () => {
         if (!message.trim()) return;
         setSending(true);
         try {
-            const sendedMsg = await send({
+            // Create the promise to send message
+            const p = send({
                 chatId,
                 text: message,
                 senderId: user?._id,
             });
 
-            // Optimistically update local state for sender
+            // Show toast during the promise lifecycle
+            toast.promise(p, {
+                loading: "Sending message...",
+                success: "Message sent",
+                error: "Failed to send",
+            });
+
+            const sendedMsg = await p;
+
+            // Optimistically update chat UI
             setChatData((prev) => [...(prev || []), sendedMsg]);
 
-            // Tell server to broadcast
+            // Notify server
             socket.emit("send-message", chatId);
 
             setMessage("");
             scrollToBottom();
         } catch (error) {
-            console.log(error);
+            console.error(error);
+        } finally {
+            setSending(false);
         }
-        setSending(false);
     };
-
     const handleEmojiClick = (emojiData, event) => {
         setMessage((prev) => prev + emojiData.emoji);
         setEmojisVisible(false);
