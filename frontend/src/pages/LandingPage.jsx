@@ -107,6 +107,10 @@ const LandingPage = () => {
                     </div>
                     <div
                         className="hero-image"
+                        style={{
+                            borderRadius: "20px",
+                            overflow: "hidden",
+                        }}
                     >
                         <Spline scene="https://prod.spline.design/X7Hn2nqV-m13fS1s/scene.splinecode" />
                     </div>
