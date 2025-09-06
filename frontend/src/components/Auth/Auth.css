@@ -87,6 +87,17 @@ input {
 .signUpForm input[type="file"] {
     padding: 6px;
 }
+
+.input-error {
+    border: 1px solid red;
+}
+
+.error-text {
+    text-align: left !important;
+    color: red !important;
+    font-size: 0.8rem !important;
+}
+
 @media (max-width: 600px) {
     .authContainer {
         padding: 0 1rem;

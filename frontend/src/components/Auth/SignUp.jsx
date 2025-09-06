@@ -12,8 +12,29 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
         fullname: "",
         email: "",
         password: "",
-        avatar: null,
+        avatar: null, // store File object, not URL yet
     });
+
+    const [errors, setErrors] = useState({});
+
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.username.trim())
+            newErrors.username = "Username is required";
+        if (!formData.fullname.trim())
+            newErrors.fullname = "Full Name is required";
+        if (!formData.email.trim()) newErrors.email = "Email is required";
+        if (!formData.password.trim()) {
+            newErrors.password = "Password is required";
+        } else {
+            if (formData.password.length < 8) {
+                newErrors.password = "Password must be at least 8 characters";
+            }
+        }
+        if (!formData.avatar) newErrors.avatar = "Avatar is required";
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -23,48 +44,76 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
         }));
     };
 
+    const handleFocus = (e) => {
+        const { name } = e.target;
+        setErrors((prevErrors) => ({
+            ...prevErrors,
+            [name]: "",
+        }));
+    };
+
+    const handleUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setFormData((prevData) => ({
+            ...prevData,
+            avatar: file, // just save the file, don't upload yet
+        }));
+        setErrors((prev) => ({ ...prev, avatar: "" }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle form submission logic here
+
+        if (!validate()) {
+            toast.error("Please fill in all fields correctly.");
+            return;
+        }
+
+        let avatarUrl = null;
+        try {
+            // Now upload the avatar (only now!)
+            if (formData.avatar) {
+                avatarUrl = await uploadAvatar(formData.avatar);
+            }
+        } catch (err) {
+            toast.error("Avatar upload failed");
+            return;
+        }
 
         try {
-            const res = await signUp(formData);
+            const res = await signUp({
+                ...formData,
+                avatar: avatarUrl,
+            });
 
-            // after successful signup
             if (res?.success && res?.newUser?._id) {
                 socket.emit("new-user-registered", res.newUser);
             }
+
             if (res?.success) {
                 toast.success("Welcome to Conversi!");
                 navigate("/dashboard");
-            }else{
+            } else {
                 toast.error("Sign up failed");
             }
         } catch (error) {
             toast.error("Sign up failed");
             console.log(error);
         }
-        // Reset form fields
+
         setFormData({
             username: "",
             fullname: "",
             email: "",
             password: "",
+            avatar: null,
         });
     };
 
-    const handleUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const avatarUrl = await uploadAvatar(file);
-        setFormData((prevData) => ({
-            ...prevData,
-            avatar: avatarUrl,
-        }));
-    };
     return (
-        <form className="signUpForm">
+        <form className="signUpForm" onSubmit={handleSubmit} noValidate>
             <label htmlFor="avatar">Avatar</label>
             <input
                 type="file"
@@ -72,8 +121,10 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
                 name="avatar"
                 accept="image/*"
                 onChange={handleUpload}
-                required
+                className={errors.avatar ? "input-error" : ""}
             />
+            {errors.avatar && <p className="error-text">{errors.avatar}</p>}
+
             <label htmlFor="username">Username</label>
             <input
                 type="text"
@@ -82,8 +133,12 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
                 placeholder="Enter your username"
                 value={formData.username}
                 onChange={handleChange}
+                onFocus={handleFocus}
+                className={errors.username ? "input-error" : ""}
                 required
             />
+            {errors.username && <p className="error-text">{errors.username}</p>}
+
             <label htmlFor="fullname">Full Name</label>
             <input
                 type="text"
@@ -92,8 +147,12 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
                 placeholder="Enter your name"
                 value={formData.fullname}
                 onChange={handleChange}
+                onFocus={handleFocus}
+                className={errors.fullname ? "input-error" : ""}
                 required
             />
+            {errors.fullname && <p className="error-text">{errors.fullname}</p>}
+
             <label htmlFor="email">Email</label>
             <input
                 type="email"
@@ -102,8 +161,12 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
+                onFocus={handleFocus}
+                className={errors.email ? "input-error" : ""}
                 required
             />
+            {errors.email && <p className="error-text">{errors.email}</p>}
+
             <label htmlFor="password">Password</label>
             <input
                 type="password"
@@ -112,11 +175,16 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
+                onFocus={handleFocus}
+                className={errors.password ? "input-error" : ""}
                 required
             />
-            <button type="submit" className="submit" onClick={handleSubmit}>
+            {errors.password && <p className="error-text">{errors.password}</p>}
+
+            <button type="submit" className="submit">
                 Create Account
             </button>
+
             <p className="toggleText">
                 Already have an account?{" "}
                 <span className="toggleLink" onClick={() => setIsSignIn(true)}>

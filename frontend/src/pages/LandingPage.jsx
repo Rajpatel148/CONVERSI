@@ -1,17 +1,14 @@
 import React, { useState } from "react";
 import { MessageCircle, Phone, Users, Video } from "lucide-react";
-import SignIn from "../components/Auth/SignIn";
-import SignUp from "../components/Auth/SignUp";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import "./LandingPage.css";
+import Spline from "@splinetool/react-spline";
 import Auth from "../components/Auth/Auth";
-import useIsMobile from "../hook/useIsMobile.jsx";
 
 const LandingPage = () => {
     const [authVisible, setAuthVisible] = useState(false);
     const [isSignIn, setIsSignIn] = useState(false);
-    const isMobile = useIsMobile();
     return (
         <div className="landingPage">
             {/* NavBar */}
@@ -108,11 +105,10 @@ const LandingPage = () => {
                             </Button>
                         </div>
                     </div>
-                    <div className="hero-image">
-                        <img
-                            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/modern-chat-app-interface-mockup-on-phone-zy59qma5moF0nYI767dZ3DkqtqIKK9.png"
-                            alt="Hero Image"
-                        />
+                    <div
+                        className="hero-image"
+                    >
+                        <Spline scene="https://prod.spline.design/X7Hn2nqV-m13fS1s/scene.splinecode" />
                     </div>
                 </div>
             </section>
@@ -259,12 +255,16 @@ const LandingPage = () => {
                         onClick={(e) => e.stopPropagation()}
                         sx={{
                             position: "absolute",
-                            top: isMobile ? "1rem" : "2rem",
+                            top: "1rem",
                             left: "auto",
                             zIndex: 2,
                         }}
                     >
-                        <Auth isSignIn={isSignIn} setIsSignIn={setIsSignIn} setAuthVisible={setAuthVisible}/>
+                        <Auth
+                            isSignIn={isSignIn}
+                            setIsSignIn={setIsSignIn}
+                            setAuthVisible={setAuthVisible}
+                        />
                     </Box>
                     <Box
                         sx={{
