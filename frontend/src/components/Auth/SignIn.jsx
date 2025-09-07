@@ -23,10 +23,17 @@ const SignIn = ({ isSignIn, setIsSignIn }) => {
         const newErrors = {};
         if (!formData.username.trim())
             newErrors.username = "Username is required";
-        if (!formData.email.trim()) newErrors.email = "Email is required";
+        if (!formData.email.trim()) {
+            newErrors.email = "Email is required";
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                newErrors.email = "Invalid email format";
+            }
+        }
         if (!formData.password.trim()) {
             newErrors.password = "Password is required";
-        }else{
+        } else {
             if (formData.password.length < 8) {
                 newErrors.password = "Password must be at least 8 characters";
             }
@@ -66,8 +73,6 @@ const SignIn = ({ isSignIn, setIsSignIn }) => {
                 socket.emit("setup", res.newUser._id);
                 navigate("/dashboard");
                 toast.success("Welcome back!");
-            } else {
-                toast.error("Invalid credentials");
             }
         } catch (error) {
             console.error(error);

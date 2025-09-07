@@ -2,11 +2,22 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/Authcotext.jsx";
 import toast from "react-hot-toast";
+import { useRef } from "react";
+
+const ALLOWED_IMAGE_MIME = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+    "image/gif",
+    "image/svg+xml",
+]);
 
 const SignUp = ({ isSignIn, setIsSignIn }) => {
     const navigate = useNavigate();
     const { signUp, uploadAvatar, socket } = useAuth();
-
+    const fileInputRef = useRef(null);
+    const [avatarError, setAvatarError] = useState("");
     const [formData, setFormData] = useState({
         username: "",
         fullname: "",
@@ -23,14 +34,33 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
             newErrors.username = "Username is required";
         if (!formData.fullname.trim())
             newErrors.fullname = "Full Name is required";
-        if (!formData.email.trim()) newErrors.email = "Email is required";
+        if (!formData.email.trim()) {
+            newErrors.email = "Email is required";
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                newErrors.email = "Invalid email format";
+            }
+        }
         if (!formData.password.trim()) {
             newErrors.password = "Password is required";
         } else {
-            if (formData.password.length < 8) {
+            const password = formData.password;
+
+            if (password.length < 8) {
                 newErrors.password = "Password must be at least 8 characters";
+            } else if (!/[A-Z]/.test(password)) {
+                newErrors.password =
+                    "Password must contain at least one uppercase letter";
+            } else if (!/[0-9]/.test(password)) {
+                newErrors.password =
+                    "Password must contain at least one number";
+            } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+                newErrors.password =
+                    "Password must contain at least one special character";
             }
         }
+
         if (!formData.avatar) newErrors.avatar = "Avatar is required";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -56,6 +86,16 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Validate file type
+        if (!ALLOWED_IMAGE_MIME.has(file.type)) {
+            setErrors((prev) => ({
+                ...prev,
+                avatar: "Unsupported file type",
+            }));
+            fileInputRef.current.value = ""; // reset file input
+            return;
+        }
+
         setFormData((prevData) => ({
             ...prevData,
             avatar: file, // just save the file, don't upload yet
@@ -76,6 +116,7 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
             // Now upload the avatar (only now!)
             if (formData.avatar) {
                 avatarUrl = await uploadAvatar(formData.avatar);
+                if (!avatarUrl) throw new Error("Avatar upload failed");
             }
         } catch (err) {
             toast.error("Avatar upload failed");
@@ -95,11 +136,8 @@ const SignUp = ({ isSignIn, setIsSignIn }) => {
             if (res?.success) {
                 toast.success("Welcome to Conversi!");
                 navigate("/dashboard");
-            } else {
-                toast.error("Sign up failed");
             }
         } catch (error) {
-            toast.error("Sign up failed");
             console.log(error);
         }
 

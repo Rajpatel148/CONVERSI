@@ -19,17 +19,17 @@ export const setAuthToken = (token) => {
     }
 };
 
-api.interceptors.response.use(
-    (res) => res,
-    (error) => {
-        if (!error.response) {
-            toast.error("Network error");
-        } else if (error.response.status === 401) {
-            toast.error("Session expired. Please log in again.");
-        }
-        return Promise.reject(error);
-    }
-);
+// api.interceptors.response.use(
+//     (res) => res,
+//     (error) => {
+//         if (!error.response) {
+//             toast.error("Network error");
+//         } else if (error.response.status === 401) {
+//             toast.error("Session expired. Please log in again.");
+//         }
+//         return Promise.reject(error);
+//     }
+// );
 
 export const loginRequest = async (data) => {
     try {
@@ -39,7 +39,7 @@ export const loginRequest = async (data) => {
         if (token) setAuthToken(token);
         return { token, user };
     } catch (error) {
-        console.log(error);
+        toast.error(error?.response?.data?.message);
     }
 };
 
@@ -55,6 +55,7 @@ export const signUpRequest = async (data) => {
             "SignUp Error:",
             error.response ? error.response.data : error.message
         );
+        toast.error(error?.response?.data?.message);
     }
     return { token, user, data };
 };

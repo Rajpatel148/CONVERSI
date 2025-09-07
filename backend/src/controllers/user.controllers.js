@@ -50,7 +50,7 @@ export const signup = asyncHandler(async (req, res) => {
 
     //check user is exists or not
     const existedUser = await User.findOne({
-        $or: [{ username }, { email }],
+        $all: [{ username }, { email }],
     }).select("-password -refreshToken");
 
     if (existedUser) {
@@ -64,7 +64,7 @@ export const signup = asyncHandler(async (req, res) => {
         email,
         password,
         avatar,
-        isOnline:true
+        isOnline: true,
     });
 
     // store the user
@@ -99,20 +99,30 @@ export const login = asyncHandler(async (req, res) => {
     // get data from frontend
     const { username, email, password } = req.body;
     //valid data or not
-    if (!(username?.trim() || email?.trim())) {
+    if (!username?.trim()) {
         throw new ApiError(400, "Username is required");
     }
-
+    if (!email?.trim()) {
+        throw new ApiError(400, "Email is required");
+    }
     if (!password?.trim()) {
         throw new ApiError(400, "Password is required");
     }
+
+    let userQuery = null;
+    if (username && email) {
+        userQuery = { username, email };
+    } else if (email) {
+        userQuery = { email };
+    } else {
+        userQuery = { username };
+    }
+
     //find user and varify
-    const user = await User.findOne({
-        $or: [{ username }, { email }],
-    });
+    const user = await User.findOne(userQuery);
 
     if (!user) {
-        throw new ApiError(404, "User not Found");
+        throw new ApiError(404, "User not exist with this credential");
     }
     //compare password
     const isValid = await user.isPasswordCorrect(password);
