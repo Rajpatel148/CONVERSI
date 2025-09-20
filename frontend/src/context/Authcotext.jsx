@@ -158,7 +158,6 @@ export const AuthProvider = ({ children }) => {
             return res;
         } catch (error) {
             toast.error("Failed to fetch chats");
-            throw error;
         }
     };
 

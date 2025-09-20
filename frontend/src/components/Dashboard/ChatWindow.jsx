@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import ChatHeader from "./ChatHeader";
 import "./ChatWindow.css";
-import { Box } from "@mui/material";
+import { Box, Skeleton } from "@mui/material";
 import { Paperclip, Send, Smile } from "lucide-react";
 import { useAuth } from "../../context/Authcotext";
 import SingleMessage from "./SingleMessage";
 import EmojiPicker from "emoji-picker-react";
 import { useRef } from "react";
 import toast from "react-hot-toast";
+import ChatAreaSkeleton from "../Skeleton/SkeletonChatArea";
 
 const ChatWindow = () => {
     const {
@@ -37,8 +38,10 @@ const ChatWindow = () => {
     };
     useEffect(() => {
         if (!chatId) return;
+        setChatData(null);
         fetchChat();
     }, [chatId]);
+    const isChatLoading = chatData == null;
 
     // Message input state
     const [message, setMessage] = useState("");
@@ -112,7 +115,10 @@ const ChatWindow = () => {
             setChatList((prevChats) =>
                 prevChats.map((c) =>
                     c._id === data.chatId
-                        ? { ...c, latestMsg: data.text ? data.text : "📷 Image" }
+                        ? {
+                              ...c,
+                              latestMsg: data.text ? data.text : "📷 Image",
+                          }
                         : c
                 )
             );
@@ -122,7 +128,9 @@ const ChatWindow = () => {
         };
         const onMessageDeleted = ({ messageId }) => {
             setChatData((prev) =>
-                Array.isArray(prev) ? prev.filter((m) => m._id !== messageId) : prev
+                Array.isArray(prev)
+                    ? prev.filter((m) => m._id !== messageId)
+                    : prev
             );
         };
 
@@ -220,7 +228,28 @@ const ChatWindow = () => {
     return (
         <div className="chat-window">
             {/* Chat Header */}
-            <ChatHeader key={chatId} data={currentChatUser} />
+            {currentChatUser ? (
+                <ChatHeader key={chatId} data={currentChatUser} />
+            ) : (
+                <div
+                    className="chat-window-header"
+                    style={{ padding: "0.75rem 1rem" }}
+                >
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                        }}
+                    >
+                        <Skeleton variant="circular" width={50} height={50} />
+                        <div style={{ flex: 1 }}>
+                            <Skeleton variant="text" height={22} width="40%" />
+                            <Skeleton variant="text" height={16} width="20%" />
+                        </div>
+                       </div>
+                </div>
+            )}
 
             {/* Chat */}
             <Box
@@ -232,7 +261,9 @@ const ChatWindow = () => {
                     gap: "1rem",
                 }}
             >
-                {Array.isArray(chatData) && chatData.length > 0 ? (
+                {isChatLoading ? (
+                    <ChatAreaSkeleton />
+                ) : Array.isArray(chatData) && chatData.length > 0 ? (
                     chatData.map((msg) => {
                         return (
                             <SingleMessage

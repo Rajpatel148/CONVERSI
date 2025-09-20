@@ -15,6 +15,7 @@ import { useAuth } from "../../context/Authcotext";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { useNavigate } from "react-router-dom";
+import SkeletonChatBar from "../Skeleton/SkeletonChatBar";
 
 const ChatSideBar = () => {
     const {
@@ -49,6 +50,9 @@ const ChatSideBar = () => {
     const filteredNonFriends = nonFriends?.filter((nf) =>
         nf.fullname?.toLowerCase().includes(nfSearch.toLowerCase())
     );
+
+    const isChatsLoading = !Array.isArray(filteredChats);
+    const isNFLoading = !Array.isArray(filteredNonFriends);
 
     // For Non friend list
     const [showNFlist, setShowNFlist] = useState(false);
@@ -221,15 +225,21 @@ const ChatSideBar = () => {
                 {/* Chat list */}
                 {!showNFlist ? (
                     <div className="chat-list">
-                        {Array.isArray(filteredChats) &&
-                            filteredChats.map((chat) => (
-                                <ChatBar key={chat._id} chatUserData={chat} />
-                            ))}
+                        {isChatsLoading
+                            ? Array.from({ length: 8 }).map((_, i) => (
+                                  <SkeletonChatBar key={i} />
+                              ))
+                            : filteredChats.map((chat) => (
+                                  <ChatBar key={chat._id} chatUserData={chat} />
+                              ))}
                     </div>
                 ) : (
                     <div className="chat-list">
-                        {Array.isArray(filteredNonFriends) &&
-                        filteredNonFriends.length > 0 ? (
+                        {isNFLoading ? (
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <SkeletonChatBar key={i} />
+                            ))
+                        ) : filteredNonFriends.length > 0 ? (
                             filteredNonFriends.map((nf) => (
                                 <div
                                     className="chat-bar"
