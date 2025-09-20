@@ -19,18 +19,6 @@ export const setAuthToken = (token) => {
     }
 };
 
-// api.interceptors.response.use(
-//     (res) => res,
-//     (error) => {
-//         if (!error.response) {
-//             toast.error("Network error");
-//         } else if (error.response.status === 401) {
-//             toast.error("Session expired. Please log in again.");
-//         }
-//         return Promise.reject(error);
-//     }
-// );
-
 export const loginRequest = async (data) => {
     try {
         const res = await api.post("/user/login", data);

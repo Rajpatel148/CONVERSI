@@ -27,6 +27,13 @@ const generateAccessRefreshTokens = async (userId) => {
     }
 };
 
+export const validate = asyncHandler(async (req,res)=>{
+    if(req.cookies.accessToken){
+        return res.status(200).json(new ApiResponse(200,{},"Token exists"));
+    }
+    return res.status(401).json(new ApiResponse(401,{},"Token is not existed"))
+})
+
 export const signup = asyncHandler(async (req, res) => {
     //get data from frontend
     const { username, fullname, email, password, avatar } = req.body;

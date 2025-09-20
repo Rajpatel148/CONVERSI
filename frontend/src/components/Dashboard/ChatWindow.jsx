@@ -4,7 +4,7 @@ import "./ChatWindow.css";
 import { Box } from "@mui/material";
 import { Paperclip, Send, Smile } from "lucide-react";
 import { useAuth } from "../../context/Authcotext";
-import SingleMessage from "./SingleMessage.jsx/";
+import SingleMessage from "./SingleMessage";
 import EmojiPicker from "emoji-picker-react";
 import { useRef } from "react";
 import toast from "react-hot-toast";
@@ -61,110 +61,99 @@ const ChatWindow = () => {
 
     // DEfine socket events
     useEffect(() => {
+        if (!socket || !chatId) return;
+
         // leave the previous room
         if (prevChatIdRef.current && prevChatIdRef.current !== chatId) {
             socket.emit("leave-chat", prevChatIdRef.current);
         }
 
+        // join the current room
         socket.emit("join-chat", { roomId: chatId, userId: user._id });
 
-        socket.on("new-message-notification", async (data) => {
-            try {
-                // await send(data);
-                
-            } catch (error) {
-                console.log(error);
-            }
-        });
-
-        socket.on("user-joined-room", (userId) => {
-            const updatedList = chatData.map((msg) => {
-                if (msg.senderId === user._id && userId !== user._id) {
-                    const index = msg.seenBy.findIndex(
-                        (seen) => seen.user === userId
-                    );
-                    if (index === -1) {
-                        msg.seenBy.push({
-                            user: userId,
-                            seenAt: new Date(),
-                        });
-                    }
-                }
-                return msg;
-            });
-            setChatData(updatedList);
-        });
-
-        socket.on("typing", (data) => {
-            if (data.typer !== user._id) {
-                setIsOtherUserTyping(true);
-            }
-        });
-        socket.on("stop-typing", (data) => {
-            if (data.typer !== user._id) {
-                setIsOtherUserTyping(false);
-            }
-        });
-        socket.on("receive-message", (data) => {
-            // 1. Update chatData (open chat window messages)
+        // listeners
+        const onNewMsgNotif = async () => {};
+        const onUserJoined = (userId) => {
             setChatData((prev) => {
-                if (!prev) return [data]; // first message
-                if (prev.find((msg) => msg._id === data._id)) return prev; // avoid duplicates
+                if (!Array.isArray(prev)) return prev;
+                const updated = prev.map((msg) => {
+                    if (msg.senderId === user._id && userId !== user._id) {
+                        const seenArr = Array.isArray(msg.seenBy)
+                            ? [...msg.seenBy]
+                            : [];
+                        const index = seenArr.findIndex(
+                            (seen) => seen.user === userId
+                        );
+                        if (index === -1) {
+                            seenArr.push({ user: userId, seenAt: new Date() });
+                        }
+                        return { ...msg, seenBy: seenArr };
+                    }
+                    return msg;
+                });
+                return updated;
+            });
+        };
+        const onTyping = (data) => {
+            if (data.typer !== user._id) setIsOtherUserTyping(true);
+        };
+        const onStopTyping = (data) => {
+            if (data.typer !== user._id) setIsOtherUserTyping(false);
+        };
+        const onReceiveMessage = (data) => {
+            // 1. Update chatData
+            setChatData((prev) => {
+                if (!prev) return [data];
+                if (prev.find((msg) => msg._id === data._id)) return prev;
                 return [...prev, data];
             });
 
-            // 2. Update latest message in chatList (sidebar)
-            setChatList((prevChats) => {
-                return prevChats.map((chat) => {
-                    if (chat._id === data.chatId) {
-                        return {
-                            ...chat,
-                            latestMsg: data.text ? data.text : "📷 Image",
-                        };
-                    }
-                    return chat;
-                });
-            });
+            // 2. Update latest message in chatList
+            setChatList((prevChats) =>
+                prevChats.map((c) =>
+                    c._id === data.chatId
+                        ? { ...c, latestMsg: data.text ? data.text : "📷 Image" }
+                        : c
+                )
+            );
 
-            // 3. Scroll to bottom of chat window
+            // 3. Scroll to bottom
             scrollToBottom();
-            socket.on("message-deleted", (data) => {
-                const { messageId } = data;
-                setChatData((prev) =>
-                    prev.filter((msg) => msg._id !== messageId)
-                );
-            });
-        });
+        };
+        const onMessageDeleted = ({ messageId }) => {
+            setChatData((prev) =>
+                Array.isArray(prev) ? prev.filter((m) => m._id !== messageId) : prev
+            );
+        };
+
+        socket.on("new-message-notification", onNewMsgNotif);
+        socket.on("user-joined-room", onUserJoined);
+        socket.on("typing", onTyping);
+        socket.on("stop-typing", onStopTyping);
+        socket.on("receive-message", onReceiveMessage);
+        socket.on("message-deleted", onMessageDeleted);
+
         prevChatIdRef.current = chatId;
         return () => {
-            socket.off("typing");
-            socket.off("stop-typing");
-            socket.off("receive-message");
-            socket.off("message-deleted");
-            socket.off("user-joined-room");
-            socket.off("new-message-notification");
+            socket.off("new-message-notification", onNewMsgNotif);
+            socket.off("user-joined-room", onUserJoined);
+            socket.off("typing", onTyping);
+            socket.off("stop-typing", onStopTyping);
+            socket.off("receive-message", onReceiveMessage);
+            socket.off("message-deleted", onMessageDeleted);
         };
-    }, [socket, chatData, setChatData, user._id, setIsOtherUserTyping]);
+    }, [socket, chatId, user._id, setIsOtherUserTyping, setChatList]);
 
     const handleSend = async () => {
         if (!message.trim()) return;
         setSending(true);
         try {
-            // Create the promise to send message
-            const p = send({
+            // Send the message
+            const sendedMsg = await send({
                 chatId,
                 text: message,
                 senderId: user?._id,
             });
-
-            // Show toast during the promise lifecycle
-            toast.promise(p, {
-                loading: "Sending message...",
-                success: "Message sent",
-                error: "Failed to send",
-            });
-
-            const sendedMsg = await p;
 
             // Optimistically update chat UI
             setChatData((prev) => [...(prev || []), sendedMsg]);
@@ -175,11 +164,12 @@ const ChatWindow = () => {
             setMessage("");
             scrollToBottom();
         } catch (error) {
-            console.error(error);
+            console.error("Failed to send message:", error);
         } finally {
             setSending(false);
         }
     };
+
     const handleEmojiClick = (emojiData, event) => {
         setMessage((prev) => prev + emojiData.emoji);
         setEmojisVisible(false);
@@ -230,7 +220,7 @@ const ChatWindow = () => {
     return (
         <div className="chat-window">
             {/* Chat Header */}
-            <ChatHeader data={currentChatUser} />
+            <ChatHeader key={chatId} data={currentChatUser} />
 
             {/* Chat */}
             <Box

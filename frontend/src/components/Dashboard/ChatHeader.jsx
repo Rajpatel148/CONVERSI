@@ -6,8 +6,14 @@ import { useEffect } from "react";
 import { useAuth } from "../../context/Authcotext";
 
 const ChatHeader = ({ data }) => {
+    // Keep a local copy so we can toggle online status updates, but make sure it syncs when props change
     const [userData, setUserData] = useState(data);
     const { socket, setActiveChatId } = useAuth();
+
+    // Sync local state when the selected chat changes
+    useEffect(() => {
+        setUserData(data);
+    }, [data]);
     useEffect(() => {
         socket.on("user-online", (id) => {
             if (userData?.isGroup) return;
@@ -73,7 +79,7 @@ const ChatHeader = ({ data }) => {
                     <p>
                         {userData?.isGroup
                             ? ""
-                            : userData?.members[0].isOnline
+                            : userData?.members?.[0]?.isOnline
                             ? "Online"
                             : "Offline"}
                     </p>

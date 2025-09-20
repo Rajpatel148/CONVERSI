@@ -1,14 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MessageCircle, Phone, Users, Video } from "lucide-react";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import "./LandingPage.css";
 import Spline from "@splinetool/react-spline";
 import Auth from "../components/Auth/Auth";
+import { useAuth } from "../context/Authcotext";
+import { useNavigate } from "react-router-dom";
 
 const LandingPage = () => {
     const [authVisible, setAuthVisible] = useState(false);
     const [isSignIn, setIsSignIn] = useState(false);
+    const navigate = useNavigate();
+
+    const { user, validate } = useAuth();
+    useEffect(() => {
+        if (user && validate()) {
+            navigate("/dashboard");
+        }
+    }, []);
     return (
         <div className="landingPage">
             {/* NavBar */}

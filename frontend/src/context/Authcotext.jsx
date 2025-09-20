@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import {
+import api, {
     createNewChat,
     deleteMsg,
     getChat,
@@ -63,6 +63,17 @@ export const AuthProvider = ({ children }) => {
             socket.off("new-user-registered");
         };
     }, [socket]);
+
+    const validate = async () =>{
+        try {
+            const res = await api.get("/user/validate", {
+                credentials: "include",
+            });
+            return res.status===200;
+        } catch (error) {
+            console.log(error);
+        } 
+    }
 
     // ✅ LOGIN
     const login = async (data) => {
@@ -261,15 +272,33 @@ export const AuthProvider = ({ children }) => {
             setNonFriends,
             createChat,
             nonFriendsList,
+            validate,
         }),
         [
             user,
             token,
+            login,
+            logout,
+            signUp,
+            myChatlist,
+            chat,
+            send,
+            deleteMessage,
+            uploadAvatar,
+            socket,
             chatList,
+            setChatList,
             activeChatId,
+            setActiveChatId,
             sending,
+            setSending,
             isOtherUserTyping,
+            setIsOtherUserTyping,
             nonFriends,
+            setNonFriends,
+            createChat,
+            nonFriendsList,
+            validate,
         ]
     );
 
