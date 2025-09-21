@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     const [sending, setSending] = useState(false);
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
     const [nonFriends, setNonFriends] = useState([]);
+    const [activeBox, setActiveBox] = useState(null); 
 
     useEffect(() => {
         if (token) {
@@ -148,7 +149,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // ✅ FETCH CHAT LIST
     const myChatlist = async () => {
         try {
             const res = await getChatlist();
@@ -272,6 +272,8 @@ export const AuthProvider = ({ children }) => {
             createChat,
             nonFriendsList,
             validate,
+            activeBox,
+            setActiveBox,
         }),
         [
             user,
@@ -298,6 +300,8 @@ export const AuthProvider = ({ children }) => {
             createChat,
             nonFriendsList,
             validate,
+            activeBox,
+            setActiveBox,
         ]
     );
 

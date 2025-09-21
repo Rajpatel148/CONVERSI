@@ -19,6 +19,9 @@
     align-items: center;
     gap: 0.75rem;
 }
+.header-info{
+    cursor: pointer;
+}
 .header-info p {
     color: rgba(0, 0, 0, 0.548);
     font-size: 0.85rem;

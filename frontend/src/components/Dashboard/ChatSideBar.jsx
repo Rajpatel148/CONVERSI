@@ -29,6 +29,7 @@ const ChatSideBar = () => {
         nonFriends,
         setNonFriends,
         createChat,
+        setActiveBox,
     } = useAuth();
     const [search, setSearch] = useState("");
     const filteredChats = chatList?.filter((chat) => {
@@ -60,7 +61,9 @@ const ChatSideBar = () => {
     useEffect(() => {
         socket.on("new-chat-created", (newChat) => {
             setChatList((prev) => [newChat, ...prev]);
-            setNonFriends((prev) => prev.filter((nf) => !newChat.members.includes(nf._id)));
+            setNonFriends((prev) =>
+                prev.filter((nf) => !newChat.members.includes(nf._id))
+            );
         });
 
         socket.on("new-message-notification", async (data) => {
@@ -106,7 +109,15 @@ const ChatSideBar = () => {
     };
     const handleClose = () => setAnchorEl(null);
     const handleViewProfile = () => {
-        console.log("View profile clicked");
+        setActiveBox({
+            type: "profile",
+            payload: {
+                name: user?.fullname,
+                username: user?.username,
+                avatar: user?.avatar,
+                status: user?.isOnline ? "Online" : user?.lastseen,
+            },
+        });
         handleClose();
     };
 
@@ -155,7 +166,7 @@ const ChatSideBar = () => {
         };
 
         try {
-            const newChat = await createChat(data); //! add socket event for new chat creation - emit message here 
+            const newChat = await createChat(data); //! add socket event for new chat creation - emit message here
 
             socket.emit("new-chat-created", newChat);
             // 1. Add new chat at the beginning of chatList
@@ -186,7 +197,11 @@ const ChatSideBar = () => {
                             <button onClick={() => setShowNFlist(true)}>
                                 <Plus />
                             </button>
-                            <button>
+                            <button
+                                onClick={() =>
+                                    setActiveBox({ type: "settings" })
+                                }
+                            >
                                 <Settings />
                             </button>
                         </div>
@@ -291,7 +306,7 @@ const ChatSideBar = () => {
             </div>
             {/* User Profile + Menu */}
             <div className="user-profile">
-                <div className="profile">
+                <div className="profile" onClick={handleViewProfile} style={{cursor: "pointer"}}>
                     <Avatar
                         src={user?.avatar || null}
                         alt="User Avatar"

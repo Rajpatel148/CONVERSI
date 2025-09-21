@@ -1,0 +1,26 @@
+
+/* Overlay container styling - keeps content nicely padded and responsive */
+.overlay-container {
+    padding: 16px;
+    background: #fff;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 600px) {
+    .overlay-container {
+        padding: 12px;
+    }
+}
+
+/* Optional: utility to center inner elements if needed */
+.overlay-container .centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

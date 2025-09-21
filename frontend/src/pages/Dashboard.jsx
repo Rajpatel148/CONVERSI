@@ -7,7 +7,7 @@ import { Send } from "lucide-react";
 import ChatSideBar from "../components/Dashboard/ChatSideBar.jsx";
 import ChatWindow from "../components/Dashboard/ChatWindow.jsx";
 import useIsMobile from "../hook/useIsMobile.jsx";
-
+import OverlayManager from "../components/Dashboard/Overlay.jsx";
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -20,6 +20,8 @@ const Dashboard = () => {
         setChatList,
         nonFriendsList,
         setNonFriends,
+        activeBox,
+        setActiveBox,
     } = useAuth();
 
     useEffect(() => {
@@ -126,6 +128,14 @@ const Dashboard = () => {
                     </Stack>
                 )}
             </div>
+
+            {/* Overlay Manager */}
+            {activeBox && (
+                <OverlayManager
+                    activeBox={activeBox}
+                    onClose={() => setActiveBox(null)}
+                />
+            )}
         </div>
     );
 };

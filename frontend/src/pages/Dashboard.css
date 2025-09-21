@@ -1,33 +1,33 @@
 .dashboard {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  /* overflow: hidden; */
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    /* overflow: hidden; */
 }
 
 .chat-sidebar {
-  width: 25%;
-  min-width: 250px;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
+    width: 25%;
+    min-width: 250px;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
 }
 
 .chat-window {
-  flex-grow: 1;
-  overflow-y: auto;
+    flex-grow: 1;
+    overflow-y: auto;
 }
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
-  .dashboard.mobile {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-  }
+    .dashboard.mobile {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+    }
 
-  .chat-sidebar,
-  .chat-window {
-    width: 100%;
-    height: 100%;
-  }
+    .chat-sidebar,
+    .chat-window {
+        width: 100%;
+        height: 100%;
+    }
 }

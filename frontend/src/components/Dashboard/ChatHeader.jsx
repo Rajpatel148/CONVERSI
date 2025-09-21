@@ -8,7 +8,7 @@ import { useAuth } from "../../context/Authcotext";
 const ChatHeader = ({ data }) => {
     // Keep a local copy so we can toggle online status updates, but make sure it syncs when props change
     const [userData, setUserData] = useState(data);
-    const { socket, setActiveChatId } = useAuth();
+    const { socket, setActiveChatId, setActiveBox } = useAuth();
 
     // Sync local state when the selected chat changes
     useEffect(() => {
@@ -63,9 +63,42 @@ const ChatHeader = ({ data }) => {
                 <Avatar
                     src={userData?.avatar || ""}
                     alt="Profile"
-                    sx={{ width: "50px", height: "50px", objectFit: "cover" }}
+                    sx={{
+                        width: "50px",
+                        height: "50px",
+                        objectFit: "cover",
+                        cursor: "pointer",
+                    }}
+                    onClick={() =>
+                        setActiveBox({
+                            type: "profile",
+                            payload: {
+                                name: userData?.members[0]?.fullname,
+                                username: userData?.members[0]?.username,
+                                avatar: userData?.members[0]?.avatar,
+                                status: userData?.members[0]?.isOnline
+                                    ? "Online"
+                                    : "Offline"
+                            },
+                        })
+                    }
                 />
-                <div className="header-info">
+                <div
+                    className="header-info"
+                    onClick={() =>
+                        setActiveBox({
+                            type: "profile",
+                            payload: {
+                                name: userData?.members[0]?.fullname,
+                                username: userData?.members[0]?.username,
+                                avatar: userData?.members[0]?.avatar,
+                                status: userData?.members[0]?.isOnline
+                                    ? "Online"
+                                    : "Offline"
+                            },
+                        })
+                    }
+                >
                     <h4
                         style={{
                             textTransform: "capitalize",
@@ -86,10 +119,16 @@ const ChatHeader = ({ data }) => {
                 </div>
             </div>
             <div className="header-btns">
-                <button className="header-btn">
+                <button
+                    className="header-btn"
+                    onClick={() => setActiveBox({ type: "voiceCall" })}
+                >
                     <Phone size={20} />
                 </button>
-                <button className="header-btn">
+                <button
+                    className="header-btn"
+                    onClick={() => setActiveBox({ type: "videoCall" })}
+                >
                     <Video size={20} />
                 </button>
                 <button className="header-btn">

@@ -56,8 +56,8 @@ export const signup = asyncHandler(async (req, res) => {
     }
 
     //check user is exists or not
-    const existedUser = await User.findOne({
-        $all: [{ username }, { email }],
+    const existedUser = await User.exists({
+        $and: [{ username }, { email }],
     }).select("-password -refreshToken");
 
     if (existedUser) {
