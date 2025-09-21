@@ -21,9 +21,11 @@ app.use(
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.routes.js";
 import chatRouter from "./routes/chat.routes.js";
+import callRouter from "./routes/call.routes.js";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/chat", chatRouter);
+app.use("/api/v1/call", callRouter);
 
 export { app };

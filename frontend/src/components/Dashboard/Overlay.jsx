@@ -20,7 +20,6 @@ const OverlayManager = ({ activeBox, onClose }) => {
     if (!activeBox) return null;
 
     const { type, payload } = activeBox;
-    console.log(payload)
     const Component = componentsMap[type];
 
     return (

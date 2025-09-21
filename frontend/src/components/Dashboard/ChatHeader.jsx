@@ -78,7 +78,7 @@ const ChatHeader = ({ data }) => {
                                 avatar: userData?.members[0]?.avatar,
                                 status: userData?.members[0]?.isOnline
                                     ? "Online"
-                                    : "Offline"
+                                    : "Offline",
                             },
                         })
                     }
@@ -94,7 +94,7 @@ const ChatHeader = ({ data }) => {
                                 avatar: userData?.members[0]?.avatar,
                                 status: userData?.members[0]?.isOnline
                                     ? "Online"
-                                    : "Offline"
+                                    : "Offline",
                             },
                         })
                     }
@@ -121,13 +121,23 @@ const ChatHeader = ({ data }) => {
             <div className="header-btns">
                 <button
                     className="header-btn"
-                    onClick={() => setActiveBox({ type: "voiceCall" })}
+                    onClick={() =>
+                        setActiveBox({
+                            type: "voiceCall",
+                            payload: { user: userData?.members?.[0] },
+                        })
+                    }
                 >
                     <Phone size={20} />
                 </button>
                 <button
                     className="header-btn"
-                    onClick={() => setActiveBox({ type: "videoCall" })}
+                    onClick={() =>
+                        setActiveBox({
+                            type: "videoCall",
+                            payload: { user: userData?.members?.[0] },
+                        })
+                    }
                 >
                     <Video size={20} />
                 </button>

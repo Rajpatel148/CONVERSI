@@ -26,11 +26,33 @@ export const socketHandler = async (io, socket) => {
         }
     });
 
+    // Call signaling: invite -> accept/decline -> server relays to target user's personal room
+    socket.on("call-invite", ({ to, from, callId, channel, kind }) => {
+        if (!to || !from || !callId || !channel) return;
+        io.to(String(to)).emit("call-invite", {
+            to,
+            from,
+            callId,
+            channel,
+            kind,
+        });
+    });
+
+    socket.on("call-accept", ({ to, from, callId, channel }) => {
+        if (!to || !from || !callId || !channel) return;
+        io.to(String(to)).emit("call-accept", { to, from, callId, channel });
+    });
+
+    socket.on("call-decline", ({ to, from, callId }) => {
+        if (!to || !from || !callId) return;
+        io.to(String(to)).emit("call-decline", { to, from, callId });
+    });
+
     //Join the chat room
     socket.on("join-chat", async ({ roomId, userId }) => {
         // validate user is a member of conversation:
         const conv = await Chat.findById(roomId);
-        if (!conv || !conv.members.some(m=>m.toString()===userId)) return;
+        if (!conv || !conv.members.some((m) => m.toString() === userId)) return;
         socket.join(roomId);
         // reset unread and emit user-joined-room
     });

@@ -1,6 +1,9 @@
 import { Server } from "socket.io";
 import { socketHandler } from "./socketHandler.js";
 import "dotenv/config";
+
+let ioInstance = null;
+
 export const initServer = (server) => {
     let io = new Server(server, {
         cors: {
@@ -15,5 +18,11 @@ export const initServer = (server) => {
     io.on("connection", (socket) => {
         socketHandler(io, socket);
     });
+    ioInstance = io;
     return io;
+};
+
+export const getIO = () => {
+    if (!ioInstance) throw new Error("Socket.io not initialized");
+    return ioInstance;
 };

@@ -13,6 +13,7 @@
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
     "@splinetool/react-spline": "^4.1.0",
+    "agora-rtc-sdk-ng": "^4.22.1",
     "axios": "^1.11.0",
     "dotenv": "^17.2.1",
     "emoji-picker-react": "^4.13.2",
@@ -21,7 +22,8 @@
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.8.2",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

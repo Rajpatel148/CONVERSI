@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     const [sending, setSending] = useState(false);
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
     const [nonFriends, setNonFriends] = useState([]);
-    const [activeBox, setActiveBox] = useState(null); 
+    const [activeBox, setActiveBox] = useState(null);
 
     useEffect(() => {
         if (token) {
@@ -52,6 +52,11 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     useEffect(() => {
+        // Join personal room for presence and call signaling
+        if (user?._id) {
+            socket.emit("setup", user._id);
+        }
+
         socket.on("new-user-registered", (newUser) => {
             setNonFriends((prev) => {
                 const exists = prev.find((nf) => nf._id === newUser._id);
@@ -60,21 +65,32 @@ export const AuthProvider = ({ children }) => {
             });
         });
 
+        // Incoming call invite (video/audio)
+        socket.on("call-invite", (data) => {
+            const { kind, from, callId, channel } = data || {};
+            const type = kind === "audio" ? "voiceCall" : "videoCall";
+            setActiveBox({
+                type,
+                payload: { incoming: true, from, callId, channel },
+            });
+        });
+
         return () => {
             socket.off("new-user-registered");
+            socket.off("call-invite");
         };
-    }, [socket]);
+    }, [socket, user?._id]);
 
-    const validate = async () =>{
+    const validate = async () => {
         try {
             const res = await api.get("/user/validate", {
                 credentials: "include",
             });
-            return res.status===200;
+            return res.status === 200;
         } catch (error) {
             console.log(error);
-        } 
-    }
+        }
+    };
 
     // ✅ LOGIN
     const login = async (data) => {
@@ -140,6 +156,9 @@ export const AuthProvider = ({ children }) => {
 
         try {
             await promise;
+            if (user?._id) {
+                socket.emit("logout", user._id);
+            }
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             setToken(null);
