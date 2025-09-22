@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import AgoraRTC from "agora-rtc-sdk-ng";
+import AgoraRTC from "../../../lib/agora";
 import { useAuth } from "../../../context/Authcotext.jsx";
 import axios from "axios";
 import { Phone, PhoneOff } from "lucide-react";

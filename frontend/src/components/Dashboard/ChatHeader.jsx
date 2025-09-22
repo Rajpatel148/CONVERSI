@@ -79,6 +79,7 @@ const ChatHeader = ({ data }) => {
                                 status: userData?.members[0]?.isOnline
                                     ? "Online"
                                     : "Offline",
+                                isMe:false
                             },
                         })
                     }
@@ -95,6 +96,7 @@ const ChatHeader = ({ data }) => {
                                 status: userData?.members[0]?.isOnline
                                     ? "Online"
                                     : "Offline",
+                                    isMe:false
                             },
                         })
                     }

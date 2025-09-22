@@ -245,7 +245,7 @@ const LandingPage = () => {
             <footer>
                 <p>
                     &copy; 2025 Conversi , All rights reserve by{" "}
-                    <a href="https://github.com/Rajpatel148">RAJ MOVALIYA</a>
+                    <a href="https://github.com/Rajpatel148">RAJ MOVALIYA🚀</a>
                 </p>
             </footer>
 

@@ -3,14 +3,19 @@ import "./Profile.css"; // custom CSS for styling
 import { Avatar, Typography, IconButton } from "@mui/material";
 import PhoneIcon from "@mui/icons-material/Phone";
 import VideocamIcon from "@mui/icons-material/Videocam";
+import { useAuth } from "../../../context/Authcotext";
 
 
 const ProfileBox = ({ payload }) => {
+
+    const {setActiveBox}= useAuth();
+
     const {
         name,
         username,
         status,
         avatar,
+        isMe
     } = payload || {};
     return (
         <div className="profile-box">
@@ -40,20 +45,37 @@ const ProfileBox = ({ payload }) => {
                     className="profile-field"
                     style={{ color: status === "Online" ? "#388e3c" : "gray" }}
                 >
-                    <span>Status:</span>{" "}
-                    {status}
+                    <span>Status:</span> {status}
                 </Typography>
             </div>
 
             {/* Call Actions */}
-            <div className="profile-actions">
-                <IconButton className="call-btn voice">
-                    <PhoneIcon fontSize="large" />
-                </IconButton>
-                <IconButton className="call-btn video">
-                    <VideocamIcon fontSize="large" />
-                </IconButton>
-            </div>
+            {!isMe && (
+                <div className="profile-actions">
+                    <IconButton
+                        className="call-btn voice"
+                        onClick={() =>
+                            setActiveBox({
+                                type: "voiceCall",
+                                payload: payload,
+                            })
+                        }
+                    >
+                        <PhoneIcon fontSize="large" />
+                    </IconButton>
+                    <IconButton
+                        className="call-btn video"
+                        onClick={() =>
+                            setActiveBox({
+                                type: "videoCall",
+                                payload: payload,
+                            })
+                        }
+                    >
+                        <VideocamIcon fontSize="large" />
+                    </IconButton>
+                </div>
+            )}
         </div>
     );
 };

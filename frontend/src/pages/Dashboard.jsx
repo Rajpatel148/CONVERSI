@@ -61,6 +61,13 @@ const Dashboard = () => {
         return (
             <div className="dashboard mobile">
                 {activeChatId ? <ChatWindow /> : <ChatSideBar />}
+                {/* Overlay Manager */}
+                {activeBox && (
+                    <OverlayManager
+                        activeBox={activeBox}
+                        onClose={() => setActiveBox(null)}
+                    />
+                )}
             </div>
         );
     }

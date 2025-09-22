@@ -116,6 +116,7 @@ const ChatSideBar = () => {
                 username: user?.username,
                 avatar: user?.avatar,
                 status: user?.isOnline ? "Online" : user?.lastseen,
+                isMe: true,
             },
         });
         handleClose();
@@ -187,7 +188,14 @@ const ChatSideBar = () => {
             <div className="1">
                 <div className="chat-header">
                     <div className="header">
-                        <div className="header-logo">
+                        <div
+                            className="header-logo"
+                            onClick={() =>
+                                window.open(
+                                    "https://conversi-nine.vercel.app"
+                                )
+                            }
+                        >
                             <div className="logo">
                                 <MessageCircle color="white" />
                             </div>
@@ -306,7 +314,11 @@ const ChatSideBar = () => {
             </div>
             {/* User Profile + Menu */}
             <div className="user-profile">
-                <div className="profile" onClick={handleViewProfile} style={{cursor: "pointer"}}>
+                <div
+                    className="profile"
+                    onClick={handleViewProfile}
+                    style={{ cursor: "pointer" }}
+                >
                     <Avatar
                         src={user?.avatar || null}
                         alt="User Avatar"
