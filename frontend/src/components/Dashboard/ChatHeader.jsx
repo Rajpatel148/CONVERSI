@@ -4,6 +4,7 @@ import { ArrowLeft, EllipsisVertical, Phone, Video } from "lucide-react";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useAuth } from "../../context/Authcotext";
+import toast from "react-hot-toast";
 
 const ChatHeader = ({ data }) => {
     // Keep a local copy so we can toggle online status updates, but make sure it syncs when props change
@@ -125,23 +126,41 @@ const ChatHeader = ({ data }) => {
             <div className="header-btns">
                 <button
                     className="header-btn"
-                    onClick={() =>
+                    onClick={() => {
+                        const target = userData?.members?.[0];
+                        if (target && target.isOnline === false) {
+                            const name =
+                                target.fullname || target.username || "User";
+                            toast.error(
+                                `${name} is offline. You can't place a call right now.`
+                            );
+                            return;
+                        }
                         setActiveBox({
                             type: "voiceCall",
-                            payload: { user: userData?.members?.[0] },
-                        })
-                    }
+                            payload: { user: target },
+                        });
+                    }}
                 >
                     <Phone size={20} />
                 </button>
                 <button
                     className="header-btn"
-                    onClick={() =>
+                    onClick={() => {
+                        const target = userData?.members?.[0];
+                        if (target && target.isOnline === false) {
+                            const name =
+                                target.fullname || target.username || "User";
+                            toast.error(
+                                `${name} is offline. You can't place a call right now.`
+                            );
+                            return;
+                        }
                         setActiveBox({
                             type: "videoCall",
-                            payload: { user: userData?.members?.[0] },
-                        })
-                    }
+                            payload: { user: target },
+                        });
+                    }}
                 >
                     <Video size={20} />
                 </button>

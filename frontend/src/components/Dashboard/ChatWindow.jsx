@@ -270,6 +270,7 @@ const ChatWindow = () => {
                                 key={msg._id || msg.id}
                                 msg={msg}
                                 fetchChat={fetchChat}
+                                msgAvatar={currentChatUser?.members?.[0]?.avatar}
                             />
                         );
                     })

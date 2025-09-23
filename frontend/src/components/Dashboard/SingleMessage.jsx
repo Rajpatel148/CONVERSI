@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "../../context/Authcotext";
 import toast from "react-hot-toast";
 
-const SingleMessage = ({ msg, fetchChat }) => {
+const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
     const { deleteMessage, user, socket, activeChatId } = useAuth();
     let isOwn = msg.senderId === user?._id;
     let formattedTime = "";
@@ -69,7 +69,7 @@ const SingleMessage = ({ msg, fetchChat }) => {
             onMouseLeave={() => setIsHovered(false)}
         >
             <Avatar
-                src={msg.sender?.avatar || null}
+                src={isOwn ? user?.avatar : msgAvatar}
                 alt={msg.sender?.name || "User Avatar"}
                 style={{ width: 30, height: 30 }}
             />

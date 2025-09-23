@@ -46,6 +46,7 @@ const ProfileBox = ({ payload }) => {
                 <div className="profile-actions">
                     <IconButton
                         className="call-btn voice"
+                        disabled={status !== "Online"}
                         onClick={() =>
                             setActiveBox({
                                 type: "voiceCall",
@@ -58,10 +59,10 @@ const ProfileBox = ({ payload }) => {
                     </IconButton>
                     <IconButton
                         className="call-btn video"
+                        disabled={status !== "Online"}
                         onClick={() =>
                             setActiveBox({
                                 type: "videoCall",
-                                // VideoCallBox expects payload.user with _id
                                 payload: { user: payload },
                             })
                         }

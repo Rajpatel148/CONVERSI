@@ -5,6 +5,7 @@ import axios from "axios";
 import { Phone } from "lucide-react";
 import { ensureMicPermission } from "../../../utils/mediaPermissions";
 import "./CallModal.css";
+import toast from "react-hot-toast";
 
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL;
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
@@ -26,6 +27,7 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
     const [callId, setCallId] = useState(payload?.callId || null);
     const [channel, setChannel] = useState(payload?.channel || null);
     const [timeLeft, setTimeLeft] = useState(10 * 60);
+    const oneMinuteWarnedRef = useRef(false);
     // Use a numeric Agora UID (required when server token is generated with buildTokenWithUid)
     const [rtcUid] = useState(() => Math.floor(Math.random() * 2147483647) + 1);
 
@@ -83,6 +85,20 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
         user?._id,
     ]);
 
+    // Immediate guard: if this is an outgoing call and the target user is offline,
+    // show a toast and close the overlay instead of opening the call UI.
+    useEffect(() => {
+        if (!payload?.incoming && otherUser && otherUser.isOnline === false) {
+            const name = otherUser.fullname || otherUser.username || "User";
+            toast.error(
+                `${name} is offline. You can't place a call right now.`
+            );
+            onClose && onClose();
+        }
+        // We intentionally run this when otherUser resolves or payload changes
+        // to catch late-arriving data.
+    }, [payload?.incoming, otherUser, onClose]);
+
     useEffect(() => {
         if (!socket || !user?._id) return;
         const onEnd = (data) => {
@@ -127,6 +143,24 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
         };
     }, [socket, user?._id, otherUser?._id, callId, rtcUid]);
 
+    // If the callee goes offline while we're calling/ringing, cancel and close.
+    useEffect(() => {
+        if (!socket || !otherUser?._id) return;
+        const handleOffline = (id) => {
+            if (id !== otherUser._id) return;
+            if (status === "calling" || status === "ringing") {
+                const name =
+                    otherUser?.fullname || otherUser?.username || "User";
+                toast.error(`${name} is offline. Call cancelled.`);
+                setStatus("idle");
+                onClose && onClose();
+            }
+        };
+        socket.on("user-offline", handleOffline);
+        return () => socket.off("user-offline", handleOffline);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, otherUser?._id, status]);
+
     // Auto-close overlay a moment after showing declined (caller side)
     useEffect(() => {
         if (status !== "declined") return;
@@ -140,6 +174,7 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
     useEffect(() => {
         if (!inCall) return;
         setTimeLeft(10 * 60);
+        oneMinuteWarnedRef.current = false;
         const t = setInterval(() => {
             setTimeLeft((s) => {
                 if (s <= 1) {
@@ -150,11 +185,38 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                     endCallLocal();
                     return 0;
                 }
+                if (s === 61 && !oneMinuteWarnedRef.current) {
+                    oneMinuteWarnedRef.current = true;
+                    toast("1 minute remaining in this call", {
+                        icon: "⏳",
+                        duration: 4000,
+                        style: {
+                            background: "#fff3cd",
+                            color: "#664d03",
+                            border: "1px solid #ffe69c",
+                        },
+                    });
+                }
                 return s - 1;
             });
         }, 1000);
         return () => clearInterval(t);
     }, [inCall, callId]);
+
+    // Show connected warning
+    useEffect(() => {
+        if (status === "connected") {
+            toast("Call limit is 10 minutes", {
+                icon: "⚠️",
+                duration: 5000,
+                style: {
+                    background: "#fff3cd",
+                    color: "#664d03",
+                    border: "1px solid #ffe69c",
+                },
+            });
+        }
+    }, [status]);
 
     // Join/leave for audio-only
     useEffect(() => {
@@ -283,6 +345,14 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
 
     const startCall = async () => {
         if (!otherUser?._id) return;
+        if (otherUser?.isOnline === false) {
+            const name = otherUser?.fullname || otherUser?.username || "User";
+            toast.error(
+                `${name} is offline. You can't place a call right now.`
+            );
+            onClose && onClose();
+            return;
+        }
         // Preflight mic permission so publish won't fail later
         const perm = await ensureMicPermission();
         if (!perm.ok) {
@@ -440,14 +510,8 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                                 "User"}
                         </div>
                         <div className="cm-subtitle">
-                            <span
-                                className={`cm-status-dot ${
-                                    otherUser?.isOnline
-                                        ? "cm-online"
-                                        : "cm-offline"
-                                }`}
-                            ></span>
-                            {otherUser?.isOnline ? "Online" : "Offline"}
+                            <span className={`cm-status-dot cm-online`}></span>
+                            {"Online"}
                         </div>
                     </div>
                     <div className="cm-divider" />
@@ -455,7 +519,16 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                         <button className="cm-btn cancel" onClick={onClose}>
                             Cancel
                         </button>
-                        <button className="cm-btn primary" onClick={startCall}>
+                        <button
+                            className="cm-btn primary"
+                            onClick={startCall}
+                            disabled={otherUser?.isOnline === false}
+                            title={
+                                otherUser?.isOnline === false
+                                    ? "User is offline"
+                                    : "Call"
+                            }
+                        >
                             <Phone size={18} /> Call
                         </button>
                     </div>

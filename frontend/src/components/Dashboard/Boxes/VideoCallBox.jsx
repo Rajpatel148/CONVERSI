@@ -56,6 +56,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     const [infoMsg, setInfoMsg] = useState("");
     const localContainerRef = useRef(null);
     const remoteContainerRef = useRef(null);
+    const oneMinuteWarnedRef = useRef(false);
 
     // Determine other participant from activeChat
     const otherUser = useMemo(() => {
@@ -96,6 +97,20 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
         payload?.from,
         user?._id,
     ]);
+
+    // Immediate guard: if this is an outgoing call and the target user is offline,
+    // show a toast and close the overlay instead of opening the call UI.
+    useEffect(() => {
+        if (!payload?.incoming && otherUser && otherUser.isOnline === false) {
+            const name = otherUser.fullname || otherUser.username || "User";
+            toast.error(
+                `${name} is offline. You can't place a call right now.`
+            );
+            onClose && onClose();
+        }
+        // We intentionally run this when otherUser resolves or payload changes
+        // to catch late-arriving data.
+    }, [payload?.incoming, otherUser, onClose]);
 
     useEffect(() => {
         if (!socket || !user?._id) return;
@@ -188,6 +203,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     useEffect(() => {
         if (!inCall) return;
         setTimeLeft(10 * 60);
+        oneMinuteWarnedRef.current = false;
         const t = setInterval(() => {
             setTimeLeft((s) => {
                 if (s <= 1) {
@@ -199,11 +215,39 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                     endCallLocal();
                     return 0;
                 }
+                // 1-minute remaining reminder
+                if (s === 61 && !oneMinuteWarnedRef.current) {
+                    oneMinuteWarnedRef.current = true;
+                    toast("1 minute remaining in this call", {
+                        icon: "⏳",
+                        duration: 4000,
+                        style: {
+                            background: "#fff3cd",
+                            color: "#664d03",
+                            border: "1px solid #ffe69c",
+                        },
+                    });
+                }
                 return s - 1;
             });
         }, 1000);
         return () => clearInterval(t);
     }, [inCall, callId]);
+
+    // Show a warning toast as soon as call connects
+    useEffect(() => {
+        if (status === "connected") {
+            toast("Call limit is 10 minutes", {
+                icon: "⚠️",
+                duration: 5000,
+                style: {
+                    background: "#fff3cd",
+                    color: "#664d03",
+                    border: "1px solid #ffe69c",
+                },
+            });
+        }
+    }, [status]);
 
     // Join/leave Agora lifecycle
     useEffect(() => {
@@ -731,14 +775,8 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                                 "User"}
                         </div>
                         <div className="cm-subtitle">
-                            <span
-                                className={`cm-status-dot ${
-                                    otherUser?.isOnline
-                                        ? "cm-online"
-                                        : "cm-offline"
-                                }`}
-                            ></span>
-                            {otherUser?.isOnline ? "Online" : "Offline"}
+                            <span className={`cm-status-dot cm-online`}></span>
+                            {"Online"}
                         </div>
                     </div>
                     <div className="cm-divider" />
