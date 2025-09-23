@@ -145,7 +145,10 @@ const ChatHeader = ({ data }) => {
                 >
                     <Video size={20} />
                 </button>
-                <button className="header-btn">
+                <button
+                    className="header-btn"
+                    onClick={() => setActiveBox({ type: "settings" })}
+                >
                     <EllipsisVertical size={20} />
                 </button>
             </div>

@@ -2,7 +2,7 @@ import React from 'react'
 
 const SettingBox = () => {
   return (
-    <div>Coming Soon.... 😁</div>
+    <div>Thodi var lagse .... 😁 <br/> Pan avse maja hoo.... 😏</div>
   )
 }
 

@@ -12,6 +12,8 @@ import {
     Video as VideoIcon,
     VideoOff,
 } from "lucide-react";
+import "./CallModal.css";
+import toast from "react-hot-toast";
 
 // Simple presence using existing socket rooms: we assume target user joins their own id room at setup
 // Backend already emits user-online/user-offline; we mirror that in UI.
@@ -31,7 +33,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     const [rtc, setRtc] = useState(null); // { appId, token, channel, uid }
     const [status, setStatus] = useState(
         payload?.incoming ? "ringing" : "idle"
-    ); // idle | calling | ringing | connected
+    ); // idle | calling | ringing | connected | declined
     const [peerId, setPeerId] = useState(payload?.from || null);
     const [callId, setCallId] = useState(payload?.callId || null);
     const [channel, setChannel] = useState(payload?.channel || null);
@@ -40,6 +42,8 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     const [camOn, setCamOn] = useState(true);
     // Use a numeric Agora UID (required when server token is generated with buildTokenWithUid)
     const [rtcUid] = useState(() => Math.floor(Math.random() * 2147483647) + 1);
+    // Guard to prevent rapid double-invites
+    const [isStarting, setIsStarting] = useState(false);
 
     // Agora client/track refs
     const clientRef = useRef(null);
@@ -55,18 +59,43 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
 
     // Determine other participant from activeChat
     const otherUser = useMemo(() => {
+        const findById = (id) => {
+            if (!id) return null;
+            for (const c of chatList || []) {
+                if (Array.isArray(c?.members)) {
+                    const u = c.members.find((m) => m?._id === id);
+                    if (u) return u;
+                }
+            }
+            if (Array.isArray(nonFriends)) {
+                const u = nonFriends.find((n) => n?._id === id);
+                if (u) return u;
+            }
+            return null;
+        };
+
+        const incomingUser = payload?.incoming ? findById(payload?.from) : null;
+        if (incomingUser) return incomingUser;
+
         const chat = chatList?.find((c) => c._id === activeChatId);
         if (chat && chat.members && chat.members.length === 2) {
             const other = chat.members.find((m) => m._id !== user._id);
             if (other) return other;
         }
-        // if initiating from non-friend card
         const nf = Array.isArray(nonFriends)
             ? nonFriends.find((n) => n._id === activeChatId)
             : null;
         if (nf) return nf;
         return payload?.user || null;
-    }, [activeChatId, chatList, nonFriends, payload?.user, user?._id]);
+    }, [
+        activeChatId,
+        chatList,
+        nonFriends,
+        payload?.user,
+        payload?.incoming,
+        payload?.from,
+        user?._id,
+    ]);
 
     useEffect(() => {
         if (!socket || !user?._id) return;
@@ -99,9 +128,17 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
         };
         socket.on("call-accept", onAccept);
 
-        const onDecline = ({ callId: cid }) => {
+        const onDecline = ({ callId: cid, reason }) => {
             if (callId && cid !== callId) return;
-            setStatus("idle");
+            if (reason === "offline") {
+                const name =
+                    otherUser?.fullname || otherUser?.username || "User";
+                toast.error(`${name} is offline. Call cancelled.`);
+                setStatus("idle");
+                onClose && onClose();
+                return;
+            }
+            setStatus("declined");
         };
         socket.on("call-decline", onDecline);
 
@@ -111,6 +148,41 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
             socket.off("call-decline", onDecline);
         };
     }, [socket, user?._id, otherUser?._id, callId]);
+
+    // Auto-cancel if callee goes offline while we're calling/ringing
+    useEffect(() => {
+        if (!socket || !otherUser?._id) return;
+        const handleOffline = (id) => {
+            if (id !== otherUser._id) return;
+            if (status === "calling" || status === "ringing") {
+                toast.error(
+                    `${
+                        otherUser?.fullname || otherUser?.username || "User"
+                    } is offline. Call cancelled.`
+                );
+                setStatus("idle");
+                onClose && onClose();
+            }
+        };
+        socket.on("user-offline", handleOffline);
+        return () => socket.off("user-offline", handleOffline);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socket, otherUser?._id, status]);
+
+    // Auto-close after showing declined for a short moment (caller side)
+    useEffect(() => {
+        if (status !== "declined") return;
+        const t = setTimeout(() => {
+            setStatus("idle");
+            onClose && onClose();
+        }, 2000);
+        return () => clearTimeout(t);
+    }, [status, onClose]);
+
+    // When status returns to idle (cancelled/closed), allow starting again
+    useEffect(() => {
+        if (status === "idle") setIsStarting(false);
+    }, [status]);
 
     // countdown timer when connected
     useEffect(() => {
@@ -316,7 +388,16 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     }, [inCall, rtc?.appId, rtc?.channel, rtc?.token, rtc?.uid]);
 
     const startCall = async () => {
+        if (isStarting) return; // prevent double click
         if (!otherUser?._id) return;
+        if (otherUser?.isOnline === false) {
+            const name = otherUser?.fullname || otherUser?.username || "User";
+            toast.error(
+                `${name} is offline. You can't place a call right now.`
+            );
+            onClose && onClose();
+            return;
+        }
         // Ask for mic+camera before sending invite so user sees prompt early
         const perm = await ensureAVPermission();
         if (!perm.ok) {
@@ -326,6 +407,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
             );
             return;
         }
+        setIsStarting(true);
         const cid = genId();
         const ch = `call_${cid}`;
         setCallId(cid);
@@ -398,6 +480,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
         if (!peerId) return;
         socket.emit("call-decline", { to: peerId, from: user._id, callId });
         setStatus("idle");
+        onClose && onClose();
     };
 
     const leaveAgora = async () => {
@@ -433,6 +516,30 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
         return () => {
             leaveAgora();
         };
+    }, []);
+
+    // If unmounted while ringing as receiver, emit decline so caller gets feedback
+    const statusRef = useRef(status);
+    useEffect(() => {
+        statusRef.current = status;
+    }, [status]);
+    useEffect(() => {
+        return () => {
+            if (
+                payload?.incoming &&
+                statusRef.current === "ringing" &&
+                peerId
+            ) {
+                try {
+                    socket?.emit("call-decline", {
+                        to: peerId,
+                        from: user?._id,
+                        callId,
+                    });
+                } catch {}
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const endButton = (
@@ -593,66 +700,248 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     };
 
     return (
-        <div style={{ padding: 16, width: 600, maxWidth: "90vw" }}>
-            <h3 style={{ marginTop: 0 }}>Video Call</h3>
+        <div style={{ padding: 8, width: 600, maxWidth: "90vw" }}>
             {status === "idle" && (
-                <button
-                    onClick={startCall}
-                    style={{
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        background: "#4CAF50",
-                        color: "white",
-                        border: 0,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                    }}
-                >
-                    <PhoneCall size={18} />
-                    Call {otherUser?.fullname || otherUser?.username || "User"}
-                </button>
+                <div className="call-modal">
+                    <div className="cm-header">
+                        <div className="cm-badge video">Video Call</div>
+                        <div className="cm-avatar">
+                            {otherUser?.avatar ? (
+                                <img src={otherUser.avatar} alt="avatar" />
+                            ) : (
+                                <svg
+                                    width="36"
+                                    height="36"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#94a3b8"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M20 21a8 8 0 0 0-16 0" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            )}
+                        </div>
+                        <div className="cm-title">
+                            Call{" "}
+                            {otherUser?.fullname ||
+                                otherUser?.username ||
+                                "User"}
+                        </div>
+                        <div className="cm-subtitle">
+                            <span
+                                className={`cm-status-dot ${
+                                    otherUser?.isOnline
+                                        ? "cm-online"
+                                        : "cm-offline"
+                                }`}
+                            ></span>
+                            {otherUser?.isOnline ? "Online" : "Offline"}
+                        </div>
+                    </div>
+                    <div className="cm-divider" />
+                    <div className="cm-actions">
+                        <button className="cm-btn cancel" onClick={onClose}>
+                            Cancel
+                        </button>
+                        <button
+                            className="cm-btn primary"
+                            onClick={startCall}
+                            disabled={
+                                otherUser?.isOnline === false || isStarting
+                            }
+                            title={
+                                otherUser?.isOnline === false
+                                    ? "User is offline"
+                                    : isStarting
+                                    ? "Starting..."
+                                    : "Call"
+                            }
+                        >
+                            <VideoIcon size={18} /> Call
+                        </button>
+                    </div>
+                </div>
             )}
             {status === "calling" && (
-                <div style={{ lineHeight: 1.5 }}>
-                    <div style={{ fontWeight: 600 }}>
-                        Calling {otherUser?.fullname || otherUser?.username}…
+                <div className="call-modal">
+                    <div className="cm-header">
+                        <div className="cm-avatar">
+                            {otherUser?.avatar ? (
+                                <img src={otherUser.avatar} alt="avatar" />
+                            ) : (
+                                <svg
+                                    width="36"
+                                    height="36"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#94a3b8"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M20 21a8 8 0 0 0-16 0" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            )}
+                        </div>
+                        <div
+                            className="cm-title lg"
+                            style={{ textTransform: "capitalize" }}
+                        >
+                            {otherUser?.fullname ||
+                                otherUser?.username ||
+                                "User"}
+                        </div>
+                        <div className="cm-type">
+                            <span className="cm-pill video">
+                                {/* video glyph */}
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                >
+                                    <path d="M17 10.5V7a2 2 0 0 0-2-2H3A2 2 0 0 0 1 7v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5l6 4.5V6l-6 4.5z" />
+                                </svg>
+                            </span>
+                            Video Call
+                        </div>
+                        <div className="cm-note" style={{ marginTop: 8 }}>
+                            Calling…
+                        </div>
+                        <div className="cm-note">Waiting for acceptance…</div>
                     </div>
-                    <div style={{ color: "#888" }}>Waiting for acceptance…</div>
+                    <div className="cm-divider" />
+                    <div className="cm-actions one">
+                        <button
+                            className="cm-btn danger"
+                            onClick={async () => {
+                                try {
+                                    await axios.post(`${API_BASE}/call/end`, {
+                                        callId,
+                                    });
+                                } catch {}
+                                setStatus("idle");
+                                if (onClose) onClose();
+                            }}
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                style={{ marginRight: 8 }}
+                            >
+                                <path d="M21 16.5l-5.2-1.3a1 1 0 0 0-1 .27l-2.3 2.3a16 16 0 0 1-7.3-7.3l2.3-2.3a1 1 0 0 0 .27-1L7.5 1A1 1 0 0 0 6.5 0H3a1 1 0 0 0-1 1C2 13.15 10.85 22 22 22a1 1 0 0 0 1-1v-3.5a1 1 0 0 0-1-1z" />
+                            </svg>
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             )}
             {status === "ringing" && (
-                <div style={{ display: "flex", gap: 12 }}>
-                    <button
-                        onClick={acceptIncoming}
-                        style={{
-                            padding: "10px 14px",
-                            borderRadius: 10,
-                            background: "#4CAF50",
-                            color: "white",
-                            border: 0,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 8,
-                        }}
-                    >
-                        <Phone size={18} /> Accept
-                    </button>
-                    <button
-                        onClick={declineIncoming}
-                        style={{
-                            padding: "10px 14px",
-                            borderRadius: 10,
-                            background: "#e74c3c",
-                            color: "white",
-                            border: 0,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 8,
-                        }}
-                    >
-                        <PhoneOff size={18} /> Decline
-                    </button>
+                <div className="call-modal">
+                    <div className="cm-header">
+                        <div className="cm-badge video">Video Call</div>
+                        <div className="cm-avatar">
+                            {otherUser?.avatar ? (
+                                <img src={otherUser.avatar} alt="avatar" />
+                            ) : (
+                                <svg
+                                    width="36"
+                                    height="36"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#94a3b8"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M20 21a8 8 0 0 0-16 0" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            )}
+                        </div>
+                        <div className="cm-title" style={{ fontSize: "12px" }}>
+                            Incoming call
+                        </div>
+                        <div className="cm-name">
+                            {otherUser?.fullname ||
+                                otherUser?.username ||
+                                "User"}
+                        </div>
+                        <div className="cm-subtitle">
+                            <span
+                                className={`cm-status-dot ${
+                                    otherUser?.isOnline
+                                        ? "cm-online"
+                                        : "cm-offline"
+                                }`}
+                            ></span>
+                            {otherUser?.isOnline ? "Online" : "Offline"}
+                        </div>
+                    </div>
+                    <div className="cm-divider" />
+                    <div className="cm-actions">
+                        <button
+                            className="cm-btn cancel"
+                            onClick={declineIncoming}
+                        >
+                            Decline
+                        </button>
+                        <button
+                            className="cm-btn primary"
+                            onClick={acceptIncoming}
+                        >
+                            <Phone size={18} /> Accept
+                        </button>
+                    </div>
+                </div>
+            )}
+            {status === "declined" && (
+                <div className="call-modal">
+                    <div className="cm-header">
+                        <div className="cm-badge video">Video Call</div>
+                        <div className="cm-avatar">
+                            {otherUser?.avatar ? (
+                                <img src={otherUser.avatar} alt="avatar" />
+                            ) : (
+                                <svg
+                                    width="36"
+                                    height="36"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#94a3b8"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M20 21a8 8 0 0 0-16 0" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            )}
+                        </div>
+                        <div className="cm-title">
+                            {otherUser?.fullname ||
+                                otherUser?.username ||
+                                "User"}
+                        </div>
+                        <div className="cm-note" style={{ marginTop: 8 }}>
+                            Call declined
+                        </div>
+                        <div className="cm-subtitle">
+                            They are unavailable right now
+                        </div>
+                    </div>
+                    <div className="cm-divider" />
+                    <div className="cm-actions one">
+                        <button className="cm-btn" onClick={onClose}>
+                            Close
+                        </button>
+                    </div>
                 </div>
             )}
             {inCall && rtc && (
