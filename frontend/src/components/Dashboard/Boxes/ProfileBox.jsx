@@ -5,18 +5,10 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import { useAuth } from "../../../context/Authcotext";
 
-
 const ProfileBox = ({ payload }) => {
+    const { setActiveBox } = useAuth();
 
-    const {setActiveBox}= useAuth();
-
-    const {
-        name,
-        username,
-        status,
-        avatar,
-        isMe
-    } = payload || {};
+    const { name, username, status, avatar, isMe } = payload || {};
     return (
         <div className="profile-box">
             {/* Avatar */}
@@ -57,7 +49,8 @@ const ProfileBox = ({ payload }) => {
                         onClick={() =>
                             setActiveBox({
                                 type: "voiceCall",
-                                payload: payload,
+                                // VoiceCallBox expects payload.user with _id
+                                payload: { user: payload },
                             })
                         }
                     >
@@ -68,7 +61,8 @@ const ProfileBox = ({ payload }) => {
                         onClick={() =>
                             setActiveBox({
                                 type: "videoCall",
-                                payload: payload,
+                                // VideoCallBox expects payload.user with _id
+                                payload: { user: payload },
                             })
                         }
                     >

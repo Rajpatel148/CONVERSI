@@ -112,6 +112,7 @@ const ChatSideBar = () => {
         setActiveBox({
             type: "profile",
             payload: {
+                _id: user?._id,
                 name: user?.fullname,
                 username: user?.username,
                 avatar: user?.avatar,
@@ -191,9 +192,7 @@ const ChatSideBar = () => {
                         <div
                             className="header-logo"
                             onClick={() =>
-                                window.open(
-                                    "https://conversi-nine.vercel.app"
-                                )
+                                window.open("https://conversi-nine.vercel.app")
                             }
                         >
                             <div className="logo">

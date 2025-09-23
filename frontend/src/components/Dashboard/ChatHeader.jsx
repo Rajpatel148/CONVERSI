@@ -61,7 +61,7 @@ const ChatHeader = ({ data }) => {
                     <ArrowLeft />
                 </button>
                 <Avatar
-                    src={userData?.avatar || ""}
+                    src={userData?.members?.[0]?.avatar || ""}
                     alt="Profile"
                     sx={{
                         width: "50px",
@@ -73,13 +73,14 @@ const ChatHeader = ({ data }) => {
                         setActiveBox({
                             type: "profile",
                             payload: {
+                                _id: userData?.members[0]?._id,
                                 name: userData?.members[0]?.fullname,
                                 username: userData?.members[0]?.username,
                                 avatar: userData?.members[0]?.avatar,
                                 status: userData?.members[0]?.isOnline
                                     ? "Online"
                                     : "Offline",
-                                isMe:false
+                                isMe: false,
                             },
                         })
                     }
@@ -90,13 +91,14 @@ const ChatHeader = ({ data }) => {
                         setActiveBox({
                             type: "profile",
                             payload: {
+                                _id: userData?.members[0]?._id,
                                 name: userData?.members[0]?.fullname,
                                 username: userData?.members[0]?.username,
                                 avatar: userData?.members[0]?.avatar,
                                 status: userData?.members[0]?.isOnline
                                     ? "Online"
                                     : "Offline",
-                                    isMe:false
+                                isMe: false,
                             },
                         })
                     }
