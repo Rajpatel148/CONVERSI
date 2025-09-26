@@ -48,6 +48,12 @@ export const socketHandler = async (io, socket) => {
         io.to(String(to)).emit("call-decline", { to, from, callId });
     });
 
+    // Caller cancels before callee accepts -> notify callee to stop ringing UI
+    socket.on("call-cancelled", ({ to, from, callId }) => {
+        if (!to || !from || !callId) return;
+        io.to(String(to)).emit("call-cancelled", { to, from, callId });
+    });
+
     //Join the chat room
     socket.on("join-chat", async ({ roomId, userId }) => {
         try {

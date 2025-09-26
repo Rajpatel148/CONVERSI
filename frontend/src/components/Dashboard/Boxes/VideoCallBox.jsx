@@ -27,7 +27,7 @@ const genId = () =>
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-const VideoCallBox = ({ payload = {}, onClose }) => {
+const VideoCallBox = ({ payload = {}, onClose, setCloseDisabled }) => {
     const { user, socket, activeChatId, chatList, nonFriends } = useAuth();
     const [inCall, setInCall] = useState(false);
     const [rtc, setRtc] = useState(null); // { appId, token, channel, uid }
@@ -201,10 +201,20 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
         };
         socket.on("call-decline", onDecline);
 
+        const onCancelled = ({ callId: cid }) => {
+            if (callId && cid !== callId) return;
+            // Receiver side cancel before accept
+            stopRinging();
+            setStatus("idle");
+            onClose && onClose();
+        };
+        socket.on("call-cancelled", onCancelled);
+
         return () => {
             socket.off("end-call", onEnd);
             socket.off("call-accept", onAccept);
             socket.off("call-decline", onDecline);
+            socket.off("call-cancelled", onCancelled);
         };
     }, [socket, user?._id, otherUser?._id, callId]);
 
@@ -653,7 +663,19 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                 try {
                     await axios.post(`${API_BASE}/call/end`, { callId });
                 } catch {}
-                await endCallLocal();
+                // Notify callee their incoming UI should stop
+                try {
+                    if (peerId && callId) {
+                        socket.emit("call-cancelled", {
+                            to: peerId,
+                            from: user._id,
+                            callId,
+                        });
+                    }
+                } catch {}
+                stopRinging();
+                setStatus("idle");
+                if (onClose) onClose();
             }}
             title="Hang up"
             style={{
@@ -804,6 +826,20 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
         if (blockedAudioTracksRef.current.size === 0) setAudioBlocked(false);
     };
 
+    // Disable overlay close while call is active or ringing
+    useEffect(() => {
+        const shouldDisable =
+            status === "calling" ||
+            status === "ringing" ||
+            status === "connected";
+        if (typeof setCloseDisabled === "function")
+            setCloseDisabled(shouldDisable);
+        return () => {
+            if (typeof setCloseDisabled === "function") setCloseDisabled(false);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
+
     return (
         <div style={{ padding: 8, width: 600, maxWidth: "90vw" }}>
             {status === "idle" && (
@@ -922,6 +958,16 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                                     await axios.post(`${API_BASE}/call/end`, {
                                         callId,
                                     });
+                                } catch {}
+                                // Notify callee their incoming UI should stop
+                                try {
+                                    if (peerId && callId) {
+                                        socket.emit("call-cancelled", {
+                                            to: peerId,
+                                            from: user._id,
+                                            callId,
+                                        });
+                                    }
                                 } catch {}
                                 stopRinging();
                                 setStatus("idle");

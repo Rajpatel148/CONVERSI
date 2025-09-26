@@ -16,7 +16,7 @@ const genId = () =>
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-const VoiceCallBox = ({ payload = {}, onClose }) => {
+const VoiceCallBox = ({ payload = {}, onClose, setCloseDisabled }) => {
     const { user, socket, activeChatId, chatList, nonFriends } = useAuth();
     const [inCall, setInCall] = useState(false);
     const [rtc, setRtc] = useState(null); // { appId, token, channel, uid }
@@ -187,13 +187,23 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
             setStatus("declined");
         };
 
+        const onCancelled = ({ callId: cid }) => {
+            // Receiver hears caller cancelled before accept
+            if (callId && cid !== callId) return;
+            stopRinging();
+            setStatus("idle");
+            onClose && onClose();
+        };
+
         socket.on("call-accept", onAccept);
         socket.on("call-decline", onDecline);
+        socket.on("call-cancelled", onCancelled);
 
         return () => {
             socket.off("end-call", onEnd);
             socket.off("call-accept", onAccept);
             socket.off("call-decline", onDecline);
+            socket.off("call-cancelled", onCancelled);
         };
     }, [socket, user?._id, otherUser?._id, callId, rtcUid]);
 
@@ -532,6 +542,21 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Manage overlay close button: disable during calling/ringing/connected
+    useEffect(() => {
+        const shouldDisable =
+            status === "calling" ||
+            status === "ringing" ||
+            status === "connected";
+        if (typeof setCloseDisabled === "function")
+            setCloseDisabled(shouldDisable);
+        return () => {
+            // On unmount, ensure it's enabled back
+            if (typeof setCloseDisabled === "function") setCloseDisabled(false);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
+
     return (
         <div style={{ padding: 8, width: 520, maxWidth: "90vw" }}>
             {status === "idle" && (
@@ -649,6 +674,16 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                                             callId,
                                         })
                                         .catch(() => {});
+                                } catch {}
+                                // Notify callee their incoming UI should stop
+                                try {
+                                    if (peerId && callId) {
+                                        socket.emit("call-cancelled", {
+                                            to: peerId,
+                                            from: user._id,
+                                            callId,
+                                        });
+                                    }
                                 } catch {}
                                 stopRinging();
                                 setStatus("idle");

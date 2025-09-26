@@ -1,4 +1,5 @@
 import { Dialog, IconButton } from "@mui/material";
+import { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import ProfileBox from "./Boxes/ProfileBox.jsx";
 import SettingsBox from "./Boxes/SettingBox.jsx";
@@ -22,6 +23,9 @@ const OverlayManager = ({ activeBox, onClose }) => {
     const { type, payload } = activeBox;
     const Component = componentsMap[type];
 
+    // Allow child components (like call boxes) to disable/hide the close button
+    const [closeDisabled, setCloseDisabled] = useState(false);
+
     return (
         <Dialog
             open={true}
@@ -44,25 +48,31 @@ const OverlayManager = ({ activeBox, onClose }) => {
             }}
         >
             {/* Close button positioned just outside the box */}
-            <IconButton
-                onClick={onClose}
-                sx={{
-                    position: "absolute",
-                    top: -18, // just above the box
-                    right: -18, // just outside the right edge
-                    bgcolor: "#7b7474c2",
-                    boxShadow: 2,
-                    color: "white",
-                    "&:hover": {
-                        bgcolor: "#525151ef",
-                    },
-                }}
-            >
-                <CloseIcon />
-            </IconButton>
+            {!closeDisabled && (
+                <IconButton
+                    onClick={onClose}
+                    sx={{
+                        position: "absolute",
+                        top: -18, // just above the box
+                        right: -18, // just outside the right edge
+                        bgcolor: "#7b7474c2",
+                        boxShadow: 2,
+                        color: "white",
+                        "&:hover": {
+                            bgcolor: "#525151ef",
+                        },
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            )}
 
             <div className="overlay-container">
-                <Component payload={payload} onClose={onClose} />
+                <Component
+                    payload={payload}
+                    onClose={onClose}
+                    setCloseDisabled={setCloseDisabled}
+                />
             </div>
         </Dialog>
     );

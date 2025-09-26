@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MessageCircle, Phone, Users, Video } from "lucide-react";
+import { MessageCircle, Phone, UserLock, Video } from "lucide-react";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import "./LandingPage.css";
@@ -151,15 +151,15 @@ const LandingPage = () => {
                             </p>
                         </div>
                         <div className="feature-card">
-                            <Users
+                            <UserLock
                                 size={35}
                                 color="#15803cc5"
                                 strokeWidth={2.5}
                             />
-                            <h3>Group Chats</h3>
+                            <h3>Privacy</h3>
                             <p>
-                                Create groups with up to 256 people and stay
-                                connected with everyone.
+                                We never access your messages — your data stays
+                                with you.
                             </p>
                         </div>
                         <div className="feature-card">
