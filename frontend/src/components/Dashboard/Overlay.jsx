@@ -8,6 +8,7 @@ import VoiceCallBox from "./Boxes/VoiceCallBox.jsx";
 import DeleteBox from "./Boxes/DeleteBox.jsx";
 import "./OverLay.css";
 import DeleteAccountBox from "./Boxes/DeleteAccountBox.jsx";
+import EditProfileBox from "./Boxes/EditProfileBox.jsx";
 
 // Map overlay types to their corresponding components
 const componentsMap = {
@@ -17,6 +18,7 @@ const componentsMap = {
     voiceCall: VoiceCallBox,
     deleteOption: DeleteBox,
     deleteAccount: DeleteAccountBox,
+    editProfile: EditProfileBox,
 };
 
 const OverlayManager = ({ activeBox, onClose }) => {

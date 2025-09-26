@@ -169,4 +169,33 @@ export const deleteAccountApi = async () => {
         throw error;
     }
 };
+
+export const updateAccountApi = async ({ fullname, username }) => {
+    try {
+        const res = await api.post("/user/update-account", {
+            fullname,
+            username,
+        });
+        return res.data;
+    } catch (error) {
+        console.error(
+            "Update Account Error:",
+            error.response ? error.response.data : error.message
+        );
+        throw error;
+    }
+};
+
+export const changeAvatarApi = async ({ avatar }) => {
+    try {
+        const res = await api.post("/user/change-avatar", { avatar });
+        return res.data;
+    } catch (error) {
+        console.error(
+            "Change Avatar Error:",
+            error.response ? error.response.data : error.message
+        );
+        throw error;
+    }
+};
 export default api;

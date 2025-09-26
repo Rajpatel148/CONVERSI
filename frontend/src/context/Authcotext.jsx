@@ -11,6 +11,8 @@ import api, {
     setAuthToken,
     signUpRequest,
     deleteAccountApi,
+    updateAccountApi,
+    changeAvatarApi,
 } from "../api/axios";
 import io from "socket.io-client";
 import toast from "react-hot-toast";
@@ -293,6 +295,53 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // ✅ UPDATE ACCOUNT (fullname, username)
+    const updateAccount = async ({ fullname, username }) => {
+        const promise = updateAccountApi({ fullname, username });
+        toast.promise(promise, {
+            loading: "Saving changes...",
+            success: "Profile updated",
+            error: (e) =>
+                e?.response?.data?.message || "Failed to update profile",
+        });
+        try {
+            const res = await promise; // ApiResponse { data: user }
+            const apiUser = res?.data;
+            const newUser = apiUser
+                ? { ...(user || {}), ...apiUser }
+                : {
+                      ...(user || {}),
+                      fullname,
+                      ...(username ? { username } : {}),
+                  };
+            setUser(newUser);
+            localStorage.setItem("user", JSON.stringify(newUser));
+            return { success: true, user: newUser };
+        } catch (e) {
+            return { success: false };
+        }
+    };
+
+    // ✅ CHANGE AVATAR (url)
+    const changeAvatarProfile = async ({ avatar }) => {
+        const promise = changeAvatarApi({ avatar });
+        toast.promise(promise, {
+            loading: "Updating avatar...",
+            success: "Avatar updated",
+            error: (e) =>
+                e?.response?.data?.message || "Failed to update avatar",
+        });
+        try {
+            await promise;
+            const newUser = { ...(user || {}), avatar };
+            setUser(newUser);
+            localStorage.setItem("user", JSON.stringify(newUser));
+            return { success: true, user: newUser };
+        } catch (e) {
+            return { success: false };
+        }
+    };
+
     const contextValue = useMemo(
         () => ({
             user,
@@ -322,6 +371,8 @@ export const AuthProvider = ({ children }) => {
             activeBox,
             setActiveBox,
             deleteAccount,
+            updateAccount,
+            changeAvatarProfile,
         }),
         [
             user,
@@ -351,6 +402,8 @@ export const AuthProvider = ({ children }) => {
             activeBox,
             setActiveBox,
             deleteAccount,
+            updateAccount,
+            changeAvatarProfile,
         ]
     );
 

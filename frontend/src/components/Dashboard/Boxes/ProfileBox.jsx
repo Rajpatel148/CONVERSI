@@ -7,7 +7,6 @@ import { useAuth } from "../../../context/Authcotext";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
-
 const ProfileBox = ({ payload }) => {
     const { setActiveBox } = useAuth();
 
@@ -48,8 +47,19 @@ const ProfileBox = ({ payload }) => {
                 </Typography>
             </div>
 
-            {/* Call Actions */}
-            {!isMe && (
+            {/* Call Actions or Edit Profile */}
+            {isMe ? (
+                <div className="profile-edit">
+                    <button
+                        className="edit-profile-btn"
+                        onClick={() =>
+                            setActiveBox({ type: "editProfile", payload })
+                        }
+                    >
+                        Edit Profile
+                    </button>
+                </div>
+            ) : (
                 <div className="profile-actions">
                     <IconButton
                         className="call-btn voice"
@@ -57,7 +67,6 @@ const ProfileBox = ({ payload }) => {
                         onClick={() =>
                             setActiveBox({
                                 type: "voiceCall",
-                                // VoiceCallBox expects payload.user with _id
                                 payload: { user: payload },
                             })
                         }

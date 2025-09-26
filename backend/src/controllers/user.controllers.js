@@ -188,21 +188,39 @@ export const logOut = asyncHandler(async (req, res) => {
 });
 
 export const updateAccountDetails = asyncHandler(async (req, res) => {
-    //get data from frontend
-    const { fullname } = req.body;
-    //varify that data
+    const { fullname, username } = req.body;
+
     if (!fullname?.trim()) {
-        throw new ApiError(400, "All fields are require");
+        throw new ApiError(400, "Full name is required");
     }
 
-    //update the details
-    const user = await User.findByIdAndUpdate(req.user._id, {
-        $set: {
-            fullname,
-        },
-    }).select("-password -refreshToken");
-    //send response
-    return res.status(200).json(new ApiResponse(200, user, "Account updated")); //!here this information is got before the update of details
+    const update = { fullname };
+
+    if (typeof username === "string" && username.trim().length) {
+        const uname = username.trim().toLowerCase();
+        // basic format check: letters, numbers, underscore, 3-20 chars
+        const re = /^[a-z0-9_]{3,20}$/;
+        if (!re.test(uname)) {
+            throw new ApiError(400, "Invalid username format");
+        }
+        // Ensure uniqueness excluding current user
+        const exists = await User.findOne({
+            _id: { $ne: req.user._id },
+            username: uname,
+        }).select("_id");
+        if (exists) {
+            throw new ApiError(409, "Username already taken");
+        }
+        update.username = uname;
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: update },
+        { new: true }
+    ).select("-password -refreshToken");
+
+    return res.status(200).json(new ApiResponse(200, user, "Account updated"));
 });
 
 export const changePassword = asyncHandler(async (req, res) => {
