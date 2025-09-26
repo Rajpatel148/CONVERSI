@@ -11,7 +11,7 @@ const ChatBar = ({ chatUserData }) => {
     const avatarSrc = chatUserData?.members?.[0]?.avatar || "";
     const latestMsg = chatUserData?.latestMsg || "No messages yet";
     const unreadCount = Array.isArray(chatUserData?.unreadCounts)
-        ? chatUserData.unreadCounts.length
+        ? (chatUserData.unreadCounts.find((u) => (u.userId?._id || u.userId) === user?._id)?.count || 0)
         : 0;
 
     // Handleopen
@@ -53,9 +53,9 @@ const ChatBar = ({ chatUserData }) => {
                 <div className="info-top">{name}</div>
                 <div className="info-bottom">
                     <p>{latestMsg}</p>
-                    {/* {unreadCount > 0 && (
+                    {unreadCount > 0 && (
                         <div className="unread-badge">{unreadCount}</div>
-                    )} */}
+                    )}
                 </div>
             </div>
         </div>

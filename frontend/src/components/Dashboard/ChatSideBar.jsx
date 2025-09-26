@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     ArrowLeft,
     Ellipsis,
@@ -58,6 +58,15 @@ const ChatSideBar = () => {
     // For Non friend list
     const [showNFlist, setShowNFlist] = useState(false);
 
+    const activeChatIdRef = useRef(activeChatId);
+    const userIdRef = useRef(user?._id);
+    useEffect(() => {
+        activeChatIdRef.current = activeChatId;
+    }, [activeChatId]);
+    useEffect(() => {
+        userIdRef.current = user?._id;
+    }, [user?._id]);
+
     useEffect(() => {
         socket.on("new-chat-created", (newChat) => {
             setChatList((prev) => [newChat, ...prev]);
@@ -66,39 +75,52 @@ const ChatSideBar = () => {
             );
         });
 
-        socket.on("new-message-notification", async (data) => {
-            let newlist = [...chatList]; // clone first
-            let index = newlist.findIndex((c) => c._id === data.chatId);
-
-            if (index === -1) {
-                newlist.unshift(data.chat);
-            } else {
-                newlist[index].latestMessage = data;
-
-                if (activeChatId !== data.chatId) {
-                    newlist[index].unreadCounts = newlist[
-                        index
-                    ].unreadCounts.map((uc) => {
-                        if (uc.userId === user._id)
-                            uc.count = (uc.count || 0) + 1;
-                        return uc;
-                    });
-                    newlist[index].updatedAt = new Date();
+        socket.on("new-message-notification", async (payload) => {
+            const { chatId, chat, message } = payload || {};
+            setChatList((prev) => {
+                let list = Array.isArray(prev) ? [...prev] : [];
+                let index = list.findIndex((c) => c._id === chatId);
+                if (index === -1 && chat) {
+                    list.unshift(chat);
+                    index = 0;
                 }
-
-                // move updated chat to top
-                let updatedChat = newlist.splice(index, 1)[0];
-                newlist.unshift(updatedChat);
-            }
-
-            setChatList(newlist);
+                if (index > -1) {
+                    // update preview
+                    list[index].latestMsg = message?.text
+                        ? message.text
+                        : message?.imageUrl
+                        ? "📷 Image"
+                        : list[index].latestMsg;
+                    // increment unread if not active chat
+                    if (activeChatIdRef.current !== chatId) {
+                        list[index].unreadCounts = (list[index].unreadCounts || []).map(
+                            (uc) => {
+                                const uid = uc.userId?._id || uc.userId;
+                                if (uid === userIdRef.current) {
+                                    return { ...uc, count: (uc.count || 0) + 1 };
+                                }
+                                return uc;
+                            }
+                        );
+                    }
+                    list[index].updatedAt = new Date().toISOString();
+                    // move to top
+                    const updated = list.splice(index, 1)[0];
+                    list.unshift(updated);
+                }
+                return list;
+            });
         });
 
         return () => {
             socket.off("new-chat-created");
             socket.off("new-message-notification");
         };
-    }, [chatList, activeChatId, user, setChatList, socket]);
+        return () => {
+            socket.off("new-chat-created");
+            socket.off("new-message-notification");
+        };
+    }, [socket, setChatList, setNonFriends]);
 
     const [anchorEl, setAnchorEl] = useState(null);
     const navigate = useNavigate();

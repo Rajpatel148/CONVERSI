@@ -50,11 +50,23 @@ export const socketHandler = async (io, socket) => {
 
     //Join the chat room
     socket.on("join-chat", async ({ roomId, userId }) => {
-        // validate user is a member of conversation:
-        const conv = await Chat.findById(roomId);
-        if (!conv || !conv.members.some((m) => m.toString() === userId)) return;
-        socket.join(roomId);
-        // reset unread and emit user-joined-room
+        try {
+            const conv = await Chat.findById(roomId);
+            if (!conv || !conv.members.some((m) => m.toString() === userId)) return;
+            socket.join(roomId);
+            // Reset unread count for this user on server side for robustness
+            if (Array.isArray(conv.unreadCounts)) {
+                conv.unreadCounts = conv.unreadCounts.map((uc) => {
+                    if (uc.userId.toString() === userId.toString()) uc.count = 0;
+                    return uc;
+                });
+                await conv.save();
+            }
+            // Notify others in the room that user joined
+            socket.to(roomId).emit("user-joined-room", userId);
+        } catch (err) {
+            console.log("join-chat error:", err);
+        }
     });
 
     // Leave chat room
@@ -74,19 +86,34 @@ export const socketHandler = async (io, socket) => {
 
             io.to(chatId).emit("receive-message", latestMessage);
 
-            // Optional: notify others
-            const chat = await Chat.findById(chatId).populate("members");
-            chat.members.forEach((member) => {
-                if (
-                    member._id.toString() !==
-                    latestMessage.senderId._id.toString()
-                ) {
-                    io.to(member._id.toString()).emit(
-                        "new-message-notification",
-                        latestMessage
-                    );
-                }
-            });
+            // Notify others (outside room) with chat preview and counts
+            const chat = await Chat.findById(chatId)
+                .populate("members", "-password")
+                .lean();
+            if (chat) {
+                const payload = {
+                    chatId,
+                    chat,
+                    message: {
+                        _id: latestMessage._id,
+                        text: latestMessage.text,
+                        imageUrl: latestMessage.imageUrl,
+                        senderId: latestMessage.senderId,
+                        createdAt: latestMessage.createdAt,
+                    },
+                };
+                chat.members.forEach((member) => {
+                    if (
+                        member._id.toString() !==
+                        latestMessage.senderId._id.toString()
+                    ) {
+                        io.to(member._id.toString()).emit(
+                            "new-message-notification",
+                            payload
+                        );
+                    }
+                });
+            }
         } catch (err) {
             console.log("send-message error:", err);
         }

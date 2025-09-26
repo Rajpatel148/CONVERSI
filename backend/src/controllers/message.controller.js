@@ -27,8 +27,33 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
 
     await newMessage.save();
+    // Update latest message preview
     chat.latestMsg = text ? text : "New image";
     chat.updatedAt = new Date();
+
+    // Ensure unreadCounts exists for all members and increment for everyone except sender
+    const senderStr = senderId.toString();
+    const memberIds = chat.members.map((m) => m._id.toString());
+    // Initialize unreadCounts if missing
+    if (!Array.isArray(chat.unreadCounts)) chat.unreadCounts = [];
+    // Build a map for quick access
+    const ucMap = new Map(
+        chat.unreadCounts.map((uc) => [uc.userId.toString(), uc])
+    );
+    memberIds.forEach((mid) => {
+        // ensure entry exists
+        if (!ucMap.has(mid)) {
+            const entry = { userId: mid, count: 0 };
+            chat.unreadCounts.push(entry);
+            ucMap.set(mid, entry);
+        }
+        // increment for non-sender
+        if (mid !== senderStr) {
+            const entry = ucMap.get(mid);
+            entry.count = (entry.count || 0) + 1;
+        }
+    });
+
     await chat.save();
 
     return res
@@ -58,6 +83,23 @@ export const getAllMessage = asyncHandler(async (req, res) => {
             message.seenBy.push({ user: req.user._id });
             await message.save();
         }
+    }
+
+    // Reset unread count in Chat for this user for this conversation
+    try {
+        const chat = await Chat.findById(req.params.chatId);
+        if (chat && Array.isArray(chat.unreadCounts)) {
+            chat.unreadCounts = chat.unreadCounts.map((uc) => {
+                if (uc.userId.toString() === req.user._id.toString()) {
+                    uc.count = 0;
+                }
+                return uc;
+            });
+            await chat.save();
+        }
+    } catch (e) {
+        // non-fatal
+        console.log("Failed to reset unread count:", e?.message);
     }
 
     //return all messages

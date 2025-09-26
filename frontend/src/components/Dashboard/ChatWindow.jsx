@@ -32,6 +32,19 @@ const ChatWindow = () => {
         try {
             const response = await chat(chatId);
             setChatData(response);
+            // After loading messages, clear unread counts locally
+            setChatList((prev) => {
+                if (!Array.isArray(prev)) return prev;
+                return prev.map((c) => {
+                    if (c._id !== chatId) return c;
+                    const updatedUC = (c.unreadCounts || []).map((uc) => {
+                        const uid = uc.userId?._id || uc.userId;
+                        if (uid === user._id) return { ...uc, count: 0 };
+                        return uc;
+                    });
+                    return { ...c, unreadCounts: updatedUC };
+                });
+            });
         } catch (error) {
             setChatData(null);
         }
@@ -73,6 +86,19 @@ const ChatWindow = () => {
 
         // join the current room
         socket.emit("join-chat", { roomId: chatId, userId: user._id });
+        // Optimistically clear unread for this chat locally
+        setChatList((prev) => {
+            if (!Array.isArray(prev)) return prev;
+            return prev.map((c) => {
+                if (c._id !== chatId) return c;
+                const updatedUC = (c.unreadCounts || []).map((uc) => {
+                    const uid = uc.userId?._id || uc.userId;
+                    if (uid === user._id) return { ...uc, count: 0 };
+                    return uc;
+                });
+                return { ...c, unreadCounts: updatedUC };
+            });
+        });
 
         // listeners
         const onNewMsgNotif = async () => {};
