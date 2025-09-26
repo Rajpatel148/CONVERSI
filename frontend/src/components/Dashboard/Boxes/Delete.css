@@ -1,0 +1,67 @@
+/* Modal box */
+.delete-dialog-container {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.delete-dialog-header p {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #D10000;
+}
+
+/* Body */
+.delete-dialog-body {
+    font-size: 0.95rem;
+    color: #444;
+}
+/* Divider */
+.delete-dialog-divider {
+    height: 1px;
+    background-color: #eee;
+    margin: 5px 0;
+}
+/* Actions */
+.delete-dialog-actions {
+    display: flex;
+    justify-content: stretch;
+    gap: 0.5rem;
+}
+
+.btn {
+    padding: 10px 25px;
+    border-radius: 6px;
+    font-size: 0.97rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+}
+
+/* Green button */
+.delete-everyone {
+    background-color: #28a745;
+    color: white;
+    border: none;
+}
+
+.delete-everyone:hover {
+    background-color: #218838;
+}
+
+/* Outlined button */
+.delete-me {
+    background-color: white;
+    color: #28a745;
+    border: 2px solid #28a745;
+}
+
+.delete-me:hover {
+    background-color: #e6f9ec;
+}

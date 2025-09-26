@@ -118,12 +118,28 @@ export const deleteMessage = asyncHandler(async (req, res) => {
     }
     //add userids which is deletethe message
     const message = await Message.findById(msgID);
+    if (!message) throw new ApiError(404, "Message not found");
 
-    userIDS.forEach((userid) => {
-        if (!message.deletedFrom.includes(userid)) {
-            message.deletedFrom.push(userid);
+    // Normalize to strings to prevent ObjectId equality pitfalls
+    const toDeleteSet = new Set(
+        (Array.isArray(userIDS) ? userIDS : [userIDS]).map(String)
+    );
+
+    // Always include the requester to guarantee their own view is updated
+    if (req.user?._id) {
+        toDeleteSet.add(String(req.user._id));
+    }
+
+    // Apply to message.deletedFrom uniquely
+    const existing = new Set(
+        (message.deletedFrom || []).map((id) => String(id))
+    );
+    for (const uid of toDeleteSet) {
+        if (!existing.has(uid)) {
+            message.deletedFrom.push(uid);
+            existing.add(uid);
         }
-    });
+    }
 
     await message.save();
     //send response
@@ -157,11 +173,18 @@ export const deleteMessageHandler = async (data) => {
 
         if (!message) return false;
 
-        userIDS.forEach((userId) => {
-            if (!message.deletedFrom.includes(userId)) {
-                message.deletedFrom.push(userId);
+        const toDeleteSet = new Set(
+            (Array.isArray(userIDS) ? userIDS : [userIDS]).map(String)
+        );
+        const existing = new Set(
+            (message.deletedFrom || []).map((id) => String(id))
+        );
+        for (const uid of toDeleteSet) {
+            if (!existing.has(uid)) {
+                message.deletedFrom.push(uid);
+                existing.add(uid);
             }
-        });
+        }
 
         await message.save();
         return true;

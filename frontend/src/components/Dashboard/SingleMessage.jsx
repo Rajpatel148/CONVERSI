@@ -7,7 +7,8 @@ import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
 const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
-    const { deleteMessage, user, socket, activeChatId ,setActiveBox} = useAuth();
+    const { deleteMessage, user, socket, activeChatId, setActiveBox } =
+        useAuth();
     let isOwn = msg.senderId === user?._id;
     let formattedTime = "";
     const [isHovered, setIsHovered] = useState(false);
@@ -33,29 +34,10 @@ const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
     };
 
     const handleDelete = async (msgData) => {
-        try {
-            // Wrap the deletion request in a toast
-            const p = deleteMessage(msgData);
-
-            toast.promise(p, {
-                loading: "Deleting...",
-                success: "Message deleted",
-                error: "Failed to delete",
-            });
-
-            await p;
-
-            // Notify the server about the deleted message
-            socket.emit("delete-message", {
-                ...msgData,
-                activeChatId,
-            });
-
-            // Refresh chat after deletion
-            fetchChat();
-        } catch (error) {
-            console.error(error);
-        }
+        setActiveBox({
+            type: "deleteOption",
+            payload: { ...msgData, senderId: msg.senderId },
+        });
     };
 
     return (
@@ -113,6 +95,7 @@ const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
                     )}
                     {isOwn && (
                         <button
+                            className="del"
                             onClick={() =>
                                 handleDelete({
                                     messageId: msg._id,

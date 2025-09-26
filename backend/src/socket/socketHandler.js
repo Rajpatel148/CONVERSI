@@ -123,9 +123,31 @@ export const socketHandler = async (io, socket) => {
 
     const handleDeleteMessage = async (data) => {
         const { messageId, userIDS, chatId } = data;
-        const deleted = await deleteMessageHandler({ messageId, userIDS });
-        if (deleted && userIDS.length > 1) {
-            io.to(chatId).emit("message-deleted", data);
+        // Ensure initiator is included for persistence
+        const userSet = new Set(
+            (Array.isArray(userIDS) ? userIDS : [userIDS]).map(String)
+        );
+        if (currentUserId) userSet.add(String(currentUserId));
+        const normalized = Array.from(userSet);
+        const deleted = await deleteMessageHandler({
+            messageId,
+            userIDS: normalized,
+        });
+        if (!deleted) return;
+        if (normalized.length > 1) {
+            // delete for everyone -> broadcast to room
+            io.to(chatId).emit("message-deleted", { messageId, chatId });
+            // also ensure the initiating user receives it even if not in room
+            if (currentUserId) {
+                io.to(String(currentUserId)).emit("message-deleted", {
+                    messageId,
+                    chatId,
+                });
+            }
+        } else if (normalized.length === 1) {
+            // delete for me -> notify only that user so their UI removes locally
+            const onlyUser = String(normalized[0]);
+            io.to(onlyUser).emit("message-deleted", { messageId, chatId });
         }
     };
 
