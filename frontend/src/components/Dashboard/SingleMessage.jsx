@@ -3,12 +3,14 @@ import { Copy, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../context/Authcotext";
 import toast from "react-hot-toast";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 
 const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
-    const { deleteMessage, user, socket, activeChatId } = useAuth();
+    const { deleteMessage, user, socket, activeChatId ,setActiveBox} = useAuth();
     let isOwn = msg.senderId === user?._id;
     let formattedTime = "";
-    const [isHpovered, setIsHovered] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     if (msg.createdAt) {
         const date = new Date(msg.createdAt);
         formattedTime = date.toLocaleString("en-GB", {
@@ -75,16 +77,21 @@ const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
             />
             <div className="chat-content">
                 {msg.imageUrl ? (
-                    <img
-                        src={msg.imageUrl}
-                        alt="chat-img"
-                        style={{
-                            maxWidth: "200px",
-                            maxHeight: "200px",
-                            borderRadius: "4px",
-                            objectFit: "cover",
-                        }}
-                    />
+                    <PhotoProvider maskOpacity={0.8}>
+                        <PhotoView src={msg.imageUrl}>
+                            <img
+                                src={msg.imageUrl}
+                                alt="chat-img"
+                                style={{
+                                    maxWidth: "200px",
+                                    maxHeight: "200px",
+                                    borderRadius: "4px",
+                                    objectFit: "cover",
+                                    cursor: "pointer", // Optional: gives user a zoom hint
+                                }}
+                            />
+                        </PhotoView>
+                    </PhotoProvider>
                 ) : (
                     <p>{msg.text}</p>
                 )}
@@ -97,11 +104,13 @@ const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
                     {formattedTime}
                 </span>
             </div>
-            {isHpovered && (
+            {isHovered && (
                 <div className="chat-tools">
-                    <button onClick={handleCopy}>
-                        <Copy size={15} />
-                    </button>
+                    {!msg.imageUrl && (
+                        <button onClick={handleCopy}>
+                            <Copy size={15} />
+                        </button>
+                    )}
                     {isOwn && (
                         <button
                             onClick={() =>

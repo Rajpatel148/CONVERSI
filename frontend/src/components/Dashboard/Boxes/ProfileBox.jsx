@@ -4,6 +4,9 @@ import { Avatar, Typography, IconButton } from "@mui/material";
 import PhoneIcon from "@mui/icons-material/Phone";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import { useAuth } from "../../../context/Authcotext";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
+
 
 const ProfileBox = ({ payload }) => {
     const { setActiveBox } = useAuth();
@@ -12,17 +15,21 @@ const ProfileBox = ({ payload }) => {
     return (
         <div className="profile-box">
             {/* Avatar */}
-            <Avatar
-                src={avatar}
-                alt={name}
-                className="profile-avatar"
-                style={{
-                    border:
-                        status === "Online"
-                            ? "4px solid #4caf50"
-                            : "4px solid gray",
-                }}
-            />
+            <PhotoProvider maskOpacity={0.8}>
+                <PhotoView src={avatar}>
+                    <Avatar
+                        src={avatar}
+                        alt={name}
+                        className="profile-avatar"
+                        style={{
+                            border:
+                                status === "Online"
+                                    ? "4px solid #4caf50"
+                                    : "4px solid gray",
+                        }}
+                    />
+                </PhotoView>
+            </PhotoProvider>
 
             {/* Info */}
             <div className="profile-info">

@@ -16,6 +16,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { useNavigate } from "react-router-dom";
 import SkeletonChatBar from "../Skeleton/SkeletonChatBar";
+import toast from "react-hot-toast";
 
 const ChatSideBar = () => {
     const {
@@ -32,6 +33,7 @@ const ChatSideBar = () => {
         setActiveBox,
     } = useAuth();
     const [search, setSearch] = useState("");
+    const [copied, setCopied] = useState(false);
     const filteredChats = chatList?.filter((chat) => {
         if (
             chat.isGroup &&
@@ -396,7 +398,23 @@ const ChatSideBar = () => {
                                 </div>
                             ))
                         ) : (
-                            <button className="invite">Invite friends</button>
+                            <button
+                                className="invite"
+                                onClick={() => {
+                                    navigator.clipboard
+                                        .writeText("https://conversi-nine.vercel.app")
+                                        .then(() => {
+                                            setCopied(true);
+                                            setTimeout(
+                                                () => setCopied(false),
+                                                2000
+                                            );
+                                        });
+                                    toast.success("Link copied");
+                                }}
+                            >
+                                {copied ? "Link Copied!" : "Invite Friends"}
+                            </button>
                         )}
                     </div>
                 )}
