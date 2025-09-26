@@ -67,6 +67,66 @@ const ChatSideBar = () => {
         userIdRef.current = user?._id;
     }, [user?._id]);
 
+    // New message notification sound setup
+    const newMsgAudioRef = useRef(null);
+    const audioPrimedRef = useRef(false);
+    const ensureNewMsgAudio = () => {
+        if (!newMsgAudioRef.current) {
+            try {
+                const a = new Audio("/new-chat.wav");
+                a.preload = "auto";
+                a.volume = 0.8;
+                newMsgAudioRef.current = a;
+            } catch (e) {
+                console.warn(
+                    "Failed to init new message audio:",
+                    e?.message || e
+                );
+            }
+        }
+        return newMsgAudioRef.current;
+    };
+    const playNewMsgSound = async () => {
+        try {
+            const a = ensureNewMsgAudio();
+            if (!a) return;
+            a.currentTime = 0;
+            await a.play();
+        } catch (e) {
+            // ignore autoplay block silently
+        }
+    };
+    // Prime audio on first user gesture to avoid autoplay restrictions
+    useEffect(() => {
+        const prime = async () => {
+            if (audioPrimedRef.current) return;
+            const a = ensureNewMsgAudio();
+            if (!a) return;
+            try {
+                a.muted = true;
+                await a.play();
+                a.pause();
+                a.currentTime = 0;
+                a.muted = false;
+                audioPrimedRef.current = true;
+            } catch {
+                // still blocked; will try again on next gesture
+            }
+        };
+        const onPointerDown = () => {
+            prime();
+        };
+        const onKeyDown = () => {
+            prime();
+        };
+        window.addEventListener("pointerdown", onPointerDown, { once: true });
+        window.addEventListener("keydown", onKeyDown, { once: true });
+        return () => {
+            window.removeEventListener("pointerdown", onPointerDown);
+            window.removeEventListener("keydown", onKeyDown);
+        };
+    }, []);
+
     useEffect(() => {
         socket.on("new-chat-created", (newChat) => {
             setChatList((prev) => [newChat, ...prev]);
@@ -77,12 +137,20 @@ const ChatSideBar = () => {
 
         socket.on("new-message-notification", async (payload) => {
             const { chatId, chat, message } = payload || {};
+            let shouldPlaySound = false;
             setChatList((prev) => {
                 let list = Array.isArray(prev) ? [...prev] : [];
                 let index = list.findIndex((c) => c._id === chatId);
                 if (index === -1 && chat) {
                     list.unshift(chat);
                     index = 0;
+                    // If this arrives while not viewing that chat and not sent by me, schedule sound
+                    const isFromMe =
+                        message?.sender?._id === userIdRef.current ||
+                        message?.sender === userIdRef.current;
+                    if (activeChatIdRef.current !== chatId && !isFromMe) {
+                        shouldPlaySound = true;
+                    }
                 }
                 if (index > -1) {
                     // update preview
@@ -98,6 +166,7 @@ const ChatSideBar = () => {
                         ).map((uc) => {
                             const uid = uc.userId?._id || uc.userId;
                             if (uid === userIdRef.current) {
+                                shouldPlaySound = true;
                                 return { ...uc, count: (uc.count || 0) + 1 };
                             }
                             return uc;
@@ -110,12 +179,11 @@ const ChatSideBar = () => {
                 }
                 return list;
             });
+            if (shouldPlaySound) {
+                playNewMsgSound();
+            }
         });
 
-        return () => {
-            socket.off("new-chat-created");
-            socket.off("new-message-notification");
-        };
         return () => {
             socket.off("new-chat-created");
             socket.off("new-message-notification");

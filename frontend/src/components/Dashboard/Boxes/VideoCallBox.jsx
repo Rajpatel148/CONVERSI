@@ -58,6 +58,47 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     const remoteContainerRef = useRef(null);
     const oneMinuteWarnedRef = useRef(false);
 
+    // Ringtone handling
+    const ringtoneRef = useRef(null);
+    const [ringAutoplayBlocked, setRingAutoplayBlocked] = useState(false);
+    const ensureRingtone = () => {
+        if (!ringtoneRef.current) {
+            try {
+                const a = new Audio("/ringing.mp3");
+                a.loop = true;
+                a.preload = "auto";
+                ringtoneRef.current = a;
+            } catch (e) {
+                console.warn(
+                    "Failed to create ringtone audio:",
+                    e?.message || e
+                );
+            }
+        }
+        return ringtoneRef.current;
+    };
+    const startRinging = async () => {
+        try {
+            const a = ensureRingtone();
+            if (!a) return;
+            await a.play();
+            setRingAutoplayBlocked(false);
+        } catch (e) {
+            setRingAutoplayBlocked(true);
+            console.warn("Ringtone autoplay blocked:", e?.message || e);
+        }
+    };
+    const stopRinging = () => {
+        try {
+            const a = ringtoneRef.current;
+            if (a) {
+                a.pause();
+                a.currentTime = 0;
+            }
+        } catch {}
+        setRingAutoplayBlocked(false);
+    };
+
     // Determine other participant from activeChat
     const otherUser = useMemo(() => {
         const findById = (id) => {
@@ -135,6 +176,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                     channel: ch,
                     uid: rtcUid,
                 });
+                stopRinging();
                 setStatus("connected");
                 setInCall(true);
             } catch (e) {
@@ -149,10 +191,12 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                 const name =
                     otherUser?.fullname || otherUser?.username || "User";
                 toast.error(`${name} is offline. Call cancelled.`);
+                stopRinging();
                 setStatus("idle");
                 onClose && onClose();
                 return;
             }
+            stopRinging();
             setStatus("declined");
         };
         socket.on("call-decline", onDecline);
@@ -163,6 +207,17 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
             socket.off("call-decline", onDecline);
         };
     }, [socket, user?._id, otherUser?._id, callId]);
+
+    // Start/stop ringtone based on status transitions
+    useEffect(() => {
+        if (status === "calling" || status === "ringing") {
+            startRinging();
+        } else {
+            stopRinging();
+        }
+        return () => {};
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
 
     // Auto-cancel if callee goes offline while we're calling/ringing
     useEffect(() => {
@@ -468,6 +523,9 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
             kind: "video",
         });
 
+        // Start ringtone for caller while waiting
+        startRinging();
+
         // If callee accepts, server will relay and this component will handle in onAccept
         // Also prefetch token for caller when accepted; not needed now
     };
@@ -513,6 +571,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                 callId,
                 channel,
             });
+            stopRinging();
             setStatus("connected");
             setInCall(true);
         } catch (e) {
@@ -523,6 +582,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
     const declineIncoming = () => {
         if (!peerId) return;
         socket.emit("call-decline", { to: peerId, from: user._id, callId });
+        stopRinging();
         setStatus("idle");
         onClose && onClose();
     };
@@ -549,6 +609,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
 
     const endCallLocal = async () => {
         await leaveAgora();
+        stopRinging();
         setInCall(false);
         setRtc(null);
         setStatus("idle");
@@ -862,6 +923,7 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                                         callId,
                                     });
                                 } catch {}
+                                stopRinging();
                                 setStatus("idle");
                                 if (onClose) onClose();
                             }}
@@ -924,6 +986,38 @@ const VideoCallBox = ({ payload = {}, onClose }) => {
                     </div>
                     <div className="cm-divider" />
                     <div className="cm-actions">
+                        {ringAutoplayBlocked && (
+                            <div
+                                style={{
+                                    background: "#222",
+                                    color: "#ffd24d",
+                                    padding: 8,
+                                    borderRadius: 8,
+                                    marginBottom: 8,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 12,
+                                }}
+                            >
+                                <span>
+                                    Ringtone is muted by the browser. Click
+                                    Enable to play it.
+                                </span>
+                                <button
+                                    onClick={() => startRinging()}
+                                    style={{
+                                        padding: "6px 10px",
+                                        borderRadius: 6,
+                                        background: "#4CAF50",
+                                        color: "white",
+                                        border: 0,
+                                    }}
+                                >
+                                    Enable sound
+                                </button>
+                            </div>
+                        )}
                         <button
                             className="cm-btn cancel"
                             onClick={declineIncoming}

@@ -43,6 +43,58 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
         speakerOnRef.current = speakerOn;
     }, [speakerOn]);
 
+    // Ringtone handling
+    const ringtoneRef = useRef(null);
+    const [ringAutoplayBlocked, setRingAutoplayBlocked] = useState(false);
+    const ensureRingtone = () => {
+        if (!ringtoneRef.current) {
+            try {
+                const a = new Audio("/ringing.mp3");
+                a.loop = true;
+                a.preload = "auto";
+                ringtoneRef.current = a;
+            } catch (e) {
+                console.warn(
+                    "Failed to create ringtone audio:",
+                    e?.message || e
+                );
+            }
+        }
+        return ringtoneRef.current;
+    };
+    const startRinging = async () => {
+        try {
+            const a = ensureRingtone();
+            if (!a) return;
+            await a.play();
+            setRingAutoplayBlocked(false);
+        } catch (e) {
+            setRingAutoplayBlocked(true);
+            console.warn("Ringtone autoplay blocked:", e?.message || e);
+        }
+    };
+    const stopRinging = () => {
+        try {
+            const a = ringtoneRef.current;
+            if (a) {
+                a.pause();
+                a.currentTime = 0;
+            }
+        } catch {}
+        setRingAutoplayBlocked(false);
+    };
+
+    // Start/stop ringtone based on call status
+    useEffect(() => {
+        if (status === "calling" || status === "ringing") {
+            startRinging();
+        } else {
+            stopRinging();
+        }
+        return () => {};
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
+
     const otherUser = useMemo(() => {
         // Helper to find a user object by id from chatList or nonFriends
         const findById = (id) => {
@@ -120,6 +172,7 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                     channel: ch,
                     uid: rtcUid,
                 });
+                stopRinging();
                 setStatus("connected");
                 setInCall(true);
             } catch (e) {
@@ -130,6 +183,7 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
         const onDecline = ({ callId: cid }) => {
             if (callId && cid !== callId) return;
             // Show a brief declined UI to the caller
+            stopRinging();
             setStatus("declined");
         };
 
@@ -596,6 +650,7 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                                         })
                                         .catch(() => {});
                                 } catch {}
+                                stopRinging();
                                 setStatus("idle");
                                 if (onClose) onClose();
                             }}
@@ -703,6 +758,38 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                     </div>
                     <div className="cm-divider" />
                     <div className="cm-actions">
+                        {ringAutoplayBlocked && (
+                            <div
+                                style={{
+                                    background: "#222",
+                                    color: "#ffd24d",
+                                    padding: 8,
+                                    borderRadius: 8,
+                                    marginBottom: 8,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 12,
+                                }}
+                            >
+                                <span>
+                                    Ringtone is muted by the browser. Click
+                                    Enable to play it.
+                                </span>
+                                <button
+                                    onClick={() => startRinging()}
+                                    style={{
+                                        padding: "6px 10px",
+                                        borderRadius: 6,
+                                        background: "#4CAF50",
+                                        color: "white",
+                                        border: 0,
+                                    }}
+                                >
+                                    Enable sound
+                                </button>
+                            </div>
+                        )}
                         <button
                             className="cm-btn cancel"
                             onClick={() => {
@@ -713,6 +800,7 @@ const VoiceCallBox = ({ payload = {}, onClose }) => {
                                         callId,
                                     });
                                 }
+                                stopRinging();
                                 setStatus("idle");
                                 onClose && onClose();
                             }}
