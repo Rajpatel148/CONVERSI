@@ -296,13 +296,6 @@ const ChatSideBar = () => {
                             <button onClick={() => setShowNFlist(true)}>
                                 <Plus />
                             </button>
-                            <button
-                                onClick={() =>
-                                    setActiveBox({ type: "settings" })
-                                }
-                            >
-                                <Settings />
-                            </button>
                         </div>
                     </div>
 
@@ -402,7 +395,9 @@ const ChatSideBar = () => {
                                 className="invite"
                                 onClick={() => {
                                     navigator.clipboard
-                                        .writeText("https://conversi-nine.vercel.app")
+                                        .writeText(
+                                            "https://conversi-nine.vercel.app"
+                                        )
                                         .then(() => {
                                             setCopied(true);
                                             setTimeout(
@@ -485,6 +480,20 @@ const ChatSideBar = () => {
                             View Profile
                         </MenuItem>
                         <MenuItem
+                            onClick={() => {
+                                setActiveBox({ type: "settings" });
+                                handleClose();
+                            }}
+                            sx={{
+                                "&:hover": {
+                                    bgcolor: "#1976d22b", // softer hover
+                                    color: "#1976d2",
+                                },
+                            }}
+                        >
+                            Setting
+                        </MenuItem>
+                        <MenuItem
                             onClick={handleLogout}
                             sx={{
                                 color: "error.main",
@@ -495,6 +504,24 @@ const ChatSideBar = () => {
                             }}
                         >
                             Logout
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                setActiveBox({
+                                    type: "deleteAccount",
+                                    payload: { userId: user?._id },
+                                });
+                                handleClose();
+                            }}
+                            sx={{
+                                color: "error.main",
+                                "&:hover": {
+                                    bgcolor: "rgba(255,0,0,0.1)",
+                                    color: "error.dark",
+                                },
+                            }}
+                        >
+                            Delete Account
                         </MenuItem>
                     </Menu>
                 </div>

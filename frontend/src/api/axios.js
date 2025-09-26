@@ -156,4 +156,17 @@ export const createNewChat = async (data) => {
         };
     }
 };
+
+export const deleteAccountApi = async () => {
+    try {
+        const res = await api.delete("/user/me");
+        return res.data;
+    } catch (error) {
+        console.error(
+            "Delete Account Error:",
+            error.response ? error.response.data : error.message
+        );
+        throw error;
+    }
+};
 export default api;

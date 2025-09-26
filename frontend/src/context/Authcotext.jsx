@@ -10,6 +10,7 @@ import api, {
     sendMsg,
     setAuthToken,
     signUpRequest,
+    deleteAccountApi,
 } from "../api/axios";
 import io from "socket.io-client";
 import toast from "react-hot-toast";
@@ -168,6 +169,33 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // ✅ DELETE ACCOUNT (irreversible)
+    const deleteAccount = async () => {
+        const promise = deleteAccountApi();
+        toast.promise(promise, {
+            loading: "Deleting account...",
+            success: "Account deleted",
+            error: (e) =>
+                e?.response?.data?.message || "Failed to delete account",
+        });
+
+        try {
+            await promise;
+            if (user?._id) {
+                socket.emit("logout", user._id);
+            }
+            // clear local
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setToken(null);
+            setUser(null);
+            setAuthToken(null);
+            return { success: true };
+        } catch (e) {
+            return { success: false };
+        }
+    };
+
     const myChatlist = async () => {
         try {
             const res = await getChatlist();
@@ -293,6 +321,7 @@ export const AuthProvider = ({ children }) => {
             validate,
             activeBox,
             setActiveBox,
+            deleteAccount,
         }),
         [
             user,
@@ -321,6 +350,7 @@ export const AuthProvider = ({ children }) => {
             validate,
             activeBox,
             setActiveBox,
+            deleteAccount,
         ]
     );
 

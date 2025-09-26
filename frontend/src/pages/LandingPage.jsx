@@ -131,9 +131,9 @@ const LandingPage = () => {
             <section className="featureContainer" id="features">
                 <div className="sectionContainer feature-section">
                     <div className="feature-header">
-                        <h2>Why Choose Conversa?</h2>
+                        <h2>Why Choose Conversi?</h2>
                         <p>
-                            Built with privacy and simplicity in mind, Conversa
+                            Built with privacy and simplicity in mind, Conversi
                             offers everything you need to stay connected.
                         </p>
                     </div>
@@ -195,7 +195,7 @@ const LandingPage = () => {
                 <div className="sectionContainer">
                     <h2>Ready to Get Started?</h2>
                     <p>
-                        Join millions of people who trust Conversa for their
+                        Join millions of people who trust Conversi for their
                         daily conversations. It's free, fast, and secure.
                     </p>
                     <div className="ctaBtns">

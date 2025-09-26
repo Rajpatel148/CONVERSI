@@ -7,6 +7,7 @@ import {
     signup,
     updateAccountDetails,
     validate,
+    deleteAccount,
 } from "../controllers/user.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -18,5 +19,6 @@ router.route("/logout").post(verifyJWT, logOut);
 router.route("/update-account").post(verifyJWT, updateAccountDetails);
 router.route("/change-password").post(verifyJWT, changePassword);
 router.route("/change-avatar").post(verifyJWT, changeAvatar);
+router.route("/me").delete(verifyJWT, deleteAccount);
 
 export default router;

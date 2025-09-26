@@ -2,6 +2,8 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Chat } from "../models/chat.models.js";
+import { Message } from "../models/message.models.js";
 
 const options = {
     httpOnly: true,
@@ -27,12 +29,14 @@ const generateAccessRefreshTokens = async (userId) => {
     }
 };
 
-export const validate = asyncHandler(async (req,res)=>{
-    if(req.cookies.accessToken){
-        return res.status(200).json(new ApiResponse(200,{},"Token exists"));
+export const validate = asyncHandler(async (req, res) => {
+    if (req.cookies.accessToken) {
+        return res.status(200).json(new ApiResponse(200, {}, "Token exists"));
     }
-    return res.status(401).json(new ApiResponse(401,{},"Token is not existed"))
-})
+    return res
+        .status(401)
+        .json(new ApiResponse(401, {}, "Token is not existed"));
+});
 
 export const signup = asyncHandler(async (req, res) => {
     //get data from frontend
@@ -247,4 +251,68 @@ export const changeAvatar = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(new ApiResponse(201, {}, "Avatar change successfully"));
+});
+
+// Delete own account and clean up related data (chats/messages)
+export const deleteAccount = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+
+    // 1) Delete all direct (1-1) chats the user is part of, and their messages
+    const directChats = await Chat.find({
+        isGroup: false,
+        members: userId,
+    }).select("_id");
+    const directChatIds = directChats.map((c) => c._id);
+    if (directChatIds.length) {
+        await Message.deleteMany({ chatId: { $in: directChatIds } });
+        await Chat.deleteMany({ _id: { $in: directChatIds } });
+    }
+
+    // 2) For group chats: remove the user from members and unreadCounts
+    await Chat.updateMany(
+        { isGroup: true, members: userId },
+        { $pull: { members: userId, unreadCounts: { userId: userId } } }
+    );
+
+    // 3) For group chats where the user was admin: transfer admin or delete if empty/too small
+    const groupsNeedingAdmin = await Chat.find({
+        isGroup: true,
+        groupAdmin: userId,
+    }).select("_id");
+    for (const { _id: gid } of groupsNeedingAdmin) {
+        const fresh = await Chat.findById(gid);
+        if (!fresh) continue;
+        if (Array.isArray(fresh.members) && fresh.members.length > 0) {
+            // Assign first remaining member as new admin
+            fresh.groupAdmin = fresh.members[0];
+            await fresh.save();
+        } else {
+            // No members left, delete chat and its messages
+            await Message.deleteMany({ chatId: gid });
+            await Chat.deleteOne({ _id: gid });
+        }
+    }
+
+    // 4) Clean up any now-too-small groups (size < 2)
+    const smallGroups = await Chat.find({
+        isGroup: true,
+        $expr: { $lt: [{ $size: "$members" }, 2] },
+    }).select("_id");
+    const smallGroupIds = smallGroups.map((g) => g._id);
+    if (smallGroupIds.length) {
+        await Message.deleteMany({ chatId: { $in: smallGroupIds } });
+        await Chat.deleteMany({ _id: { $in: smallGroupIds } });
+    }
+
+    // 5) Remove all messages sent by this user across remaining chats
+    await Message.deleteMany({ senderId: userId });
+
+    // 6) Delete the user record
+    await User.findByIdAndDelete(userId);
+
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "Account deleted successfully"));
 });

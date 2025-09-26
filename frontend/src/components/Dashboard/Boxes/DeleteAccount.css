@@ -1,0 +1,78 @@
+.delete-account-container {
+    padding: 15px;
+    max-width: 500px;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+}
+
+.delete-account-container h2 {
+    margin-bottom: 5px;
+    color: #ed1c24;
+    font-size: 1.8rem;
+}
+
+.delete-account-container p {
+    color: #444;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.delete-account-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.delete-account-container input {
+    outline: none;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    border-radius: 10px;
+    &:focus {
+        box-shadow: 0 0 0 4px rgb(194, 247, 215);
+    }
+}
+
+.delete-button {
+    margin: 0 auto;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 10px 17px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    max-width: 200px;
+    transition: all 0.2s ease;
+}
+
+.delete-button:disabled {
+    background-color: #f5c6cb;
+    cursor: not-allowed;
+}
+
+/* 🔸 RESPONSIVE STYLES */
+@media (max-width: 600px) {
+    .delete-account-container {
+        padding: 16px;
+    }
+
+    .delete-account-container h2 {
+        font-size: 1.4rem;
+    }
+
+    .delete-account-container p,
+    .delete-account-container label {
+        font-size: 0.9rem;
+    }
+
+    .delete-button {
+        width: 100%;
+        font-size: 0.95rem;
+    }
+}
