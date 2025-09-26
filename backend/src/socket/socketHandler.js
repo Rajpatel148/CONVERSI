@@ -52,12 +52,14 @@ export const socketHandler = async (io, socket) => {
     socket.on("join-chat", async ({ roomId, userId }) => {
         try {
             const conv = await Chat.findById(roomId);
-            if (!conv || !conv.members.some((m) => m.toString() === userId)) return;
+            if (!conv || !conv.members.some((m) => m.toString() === userId))
+                return;
             socket.join(roomId);
             // Reset unread count for this user on server side for robustness
             if (Array.isArray(conv.unreadCounts)) {
                 conv.unreadCounts = conv.unreadCounts.map((uc) => {
-                    if (uc.userId.toString() === userId.toString()) uc.count = 0;
+                    if (uc.userId.toString() === userId.toString())
+                        uc.count = 0;
                     return uc;
                 });
                 await conv.save();

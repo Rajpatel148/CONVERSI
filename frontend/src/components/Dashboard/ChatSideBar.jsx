@@ -93,15 +93,15 @@ const ChatSideBar = () => {
                         : list[index].latestMsg;
                     // increment unread if not active chat
                     if (activeChatIdRef.current !== chatId) {
-                        list[index].unreadCounts = (list[index].unreadCounts || []).map(
-                            (uc) => {
-                                const uid = uc.userId?._id || uc.userId;
-                                if (uid === userIdRef.current) {
-                                    return { ...uc, count: (uc.count || 0) + 1 };
-                                }
-                                return uc;
+                        list[index].unreadCounts = (
+                            list[index].unreadCounts || []
+                        ).map((uc) => {
+                            const uid = uc.userId?._id || uc.userId;
+                            if (uid === userIdRef.current) {
+                                return { ...uc, count: (uc.count || 0) + 1 };
                             }
-                        );
+                            return uc;
+                        });
                     }
                     list[index].updatedAt = new Date().toISOString();
                     // move to top

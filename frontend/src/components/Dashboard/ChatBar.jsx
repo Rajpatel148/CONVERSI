@@ -2,7 +2,7 @@ import Avatar from "@mui/material/Avatar";
 import { useAuth } from "../../context/Authcotext";
 
 const ChatBar = ({ chatUserData }) => {
-    const { user,activeChatId, setActiveChatId, socket } = useAuth();
+    const { user, activeChatId, setActiveChatId, socket } = useAuth();
     const isGroup = chatUserData?.isGroup;
     const name = isGroup
         ? chatUserData?.name || "Unnamed Group"
@@ -11,7 +11,9 @@ const ChatBar = ({ chatUserData }) => {
     const avatarSrc = chatUserData?.members?.[0]?.avatar || "";
     const latestMsg = chatUserData?.latestMsg || "No messages yet";
     const unreadCount = Array.isArray(chatUserData?.unreadCounts)
-        ? (chatUserData.unreadCounts.find((u) => (u.userId?._id || u.userId) === user?._id)?.count || 0)
+        ? chatUserData.unreadCounts.find(
+              (u) => (u.userId?._id || u.userId) === user?._id
+          )?.count || 0
         : 0;
 
     // Handleopen
@@ -34,7 +36,8 @@ const ChatBar = ({ chatUserData }) => {
             onClick={handleChatOpen}
             style={{
                 backgroundColor:
-                    activeChatId === chatUserData._id && "rgba(10, 153, 67, 0.578)",
+                    activeChatId === chatUserData._id &&
+                    "rgba(10, 153, 67, 0.578)",
                 cursor: "pointer",
             }}
         >

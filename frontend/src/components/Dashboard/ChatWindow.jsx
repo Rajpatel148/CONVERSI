@@ -273,7 +273,7 @@ const ChatWindow = () => {
                             <Skeleton variant="text" height={22} width="40%" />
                             <Skeleton variant="text" height={16} width="20%" />
                         </div>
-                       </div>
+                    </div>
                 </div>
             )}
 
@@ -296,7 +296,9 @@ const ChatWindow = () => {
                                 key={msg._id || msg.id}
                                 msg={msg}
                                 fetchChat={fetchChat}
-                                msgAvatar={currentChatUser?.members?.[0]?.avatar}
+                                msgAvatar={
+                                    currentChatUser?.members?.[0]?.avatar
+                                }
                             />
                         );
                     })
