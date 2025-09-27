@@ -26,8 +26,7 @@ const SingleMessage = ({ msg, fetchChat, msgAvatar }) => {
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(msg.text);
-            // Optionally show a success message or visual feedback
-            alert("Message copied to clipboard!");
+            toast.success("Message copied to clipboard!");
         } catch (error) {
             console.log(error);
         }

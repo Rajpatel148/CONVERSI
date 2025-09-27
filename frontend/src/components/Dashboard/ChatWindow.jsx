@@ -9,6 +9,7 @@ import EmojiPicker from "emoji-picker-react";
 import { useRef } from "react";
 import toast from "react-hot-toast";
 import ChatAreaSkeleton from "../Skeleton/SkeletonChatArea";
+import TypingIndicator from "./TypingIndicator";
 
 const ChatWindow = () => {
     const {
@@ -28,10 +29,33 @@ const ChatWindow = () => {
 
     // Fetch chat data
     const [chatData, setChatData] = useState(null);
+
     const fetchChat = async () => {
         try {
             const response = await chat(chatId);
             setChatData(response);
+            // Sync sidebar latest preview with actual last visible message
+            try {
+                const last = Array.isArray(response)
+                    ? response[response.length - 1]
+                    : null;
+                const preview = last
+                    ? last.text
+                        ? last.text
+                        : last.imageUrl
+                        ? "📷 Image"
+                        : ""
+                    : "";
+                setChatList((prev) =>
+                    Array.isArray(prev)
+                        ? prev.map((c) =>
+                              c._id === chatId
+                                  ? { ...c, latestMsg: preview }
+                                  : c
+                          )
+                        : prev
+                );
+            } catch {}
             // After loading messages, clear unread counts locally
             setChatList((prev) => {
                 if (!Array.isArray(prev)) return prev;
@@ -51,7 +75,6 @@ const ChatWindow = () => {
     };
     useEffect(() => {
         if (!chatId) return;
-        setChatData(null);
         fetchChat();
     }, [chatId]);
     const isChatLoading = chatData == null;
@@ -59,11 +82,15 @@ const ChatWindow = () => {
     // Message input state
     const [message, setMessage] = useState("");
     const [typing, settyping] = useState(false);
+    const [otherTyping, setOtherTyping] = useState(false); // show indicator for other user only
+    const otherTypingTimerRef = useRef(null);
+    const selfTypingIdleTimerRef = useRef(null); // emits stop-typing if we pause
     const currentChatUser =
         chatList?.find((c) => c._id === chatId) ||
         nonFriends.filter((nf) => nf._id == chatId)[0];
     const [emojisVisible, setEmojisVisible] = useState(false);
     const prevChatIdRef = useRef(null);
+    const inputRef = useRef(null);
 
     // Scroll to bottom on new message
     const messagesEndRef = useRef(null);
@@ -124,10 +151,29 @@ const ChatWindow = () => {
             });
         };
         const onTyping = (data) => {
-            if (data.typer !== user._id) setIsOtherUserTyping(true);
+            if (!data || data.typer === user._id || data.chatId !== chatId)
+                return;
+            setIsOtherUserTyping(true);
+            setOtherTyping(true);
+            // ensure the indicator is visible to the user
+            scrollToBottom();
+            // auto-hide after inactivity
+            if (otherTypingTimerRef.current)
+                clearTimeout(otherTypingTimerRef.current);
+            otherTypingTimerRef.current = setTimeout(() => {
+                setIsOtherUserTyping(false);
+                setOtherTyping(false);
+            }, 7000); //!chage it
         };
         const onStopTyping = (data) => {
-            if (data.typer !== user._id) setIsOtherUserTyping(false);
+            if (!data || data.typer === user._id || data.chatId !== chatId)
+                return;
+            setIsOtherUserTyping(false);
+            setOtherTyping(false);
+            if (otherTypingTimerRef.current) {
+                clearTimeout(otherTypingTimerRef.current);
+                otherTypingTimerRef.current = null;
+            }
         };
         const onReceiveMessage = (data) => {
             // 1. Update chatData
@@ -149,15 +195,48 @@ const ChatWindow = () => {
                 )
             );
 
+            // 2.5 If message is from other user, hide typing indicator
+            try {
+                const senderId = data?.senderId?._id || data?.senderId;
+                if (senderId && senderId !== user._id) {
+                    setOtherTyping(false);
+                    setIsOtherUserTyping(false);
+                    if (otherTypingTimerRef.current) {
+                        clearTimeout(otherTypingTimerRef.current);
+                        otherTypingTimerRef.current = null;
+                    }
+                }
+            } catch {}
+
             // 3. Scroll to bottom
             scrollToBottom();
         };
-        const onMessageDeleted = ({ messageId }) => {
-            setChatData((prev) =>
-                Array.isArray(prev)
-                    ? prev.filter((m) => m._id !== messageId)
-                    : prev
-            );
+        const onMessageDeleted = ({ messageId, chatId: evtChatId }) => {
+            // Only handle for the current chat
+            if (evtChatId && evtChatId !== chatId) return;
+            setChatData((prev) => {
+                if (!Array.isArray(prev)) return prev;
+                const updated = prev.filter((m) => m._id !== messageId);
+                // Recalculate latest message preview for sidebar
+                const last = updated[updated.length - 1];
+                const preview = last
+                    ? last.text
+                        ? last.text
+                        : last.imageUrl
+                        ? "📷 Image"
+                        : ""
+                    : "";
+                setChatList((prevChats) =>
+                    Array.isArray(prevChats)
+                        ? prevChats.map((c) =>
+                              c._id === chatId
+                                  ? { ...c, latestMsg: preview }
+                                  : c
+                          )
+                        : prevChats
+                );
+                return updated;
+            });
         };
 
         socket.on("new-message-notification", onNewMsgNotif);
@@ -175,6 +254,20 @@ const ChatWindow = () => {
             socket.off("stop-typing", onStopTyping);
             socket.off("receive-message", onReceiveMessage);
             socket.off("message-deleted", onMessageDeleted);
+            // ensure remote indicator is cleared when leaving chat
+            try {
+                socket.emit("stop-typing", { typer: user._id, chatId });
+            } catch {}
+            setOtherTyping(false);
+            setIsOtherUserTyping(false);
+            if (otherTypingTimerRef.current) {
+                clearTimeout(otherTypingTimerRef.current);
+                otherTypingTimerRef.current = null;
+            }
+            if (selfTypingIdleTimerRef.current) {
+                clearTimeout(selfTypingIdleTimerRef.current);
+                selfTypingIdleTimerRef.current = null;
+            }
         };
     }, [socket, chatId, user._id, setIsOtherUserTyping, setChatList]);
 
@@ -196,6 +289,13 @@ const ChatWindow = () => {
             socket.emit("send-message", chatId);
 
             setMessage("");
+            // stop typing once message is sent
+            if (typing) {
+                settyping(false);
+                socket.emit("stop-typing", { typer: user._id, chatId });
+            }
+            // Keep typing focus in the input after sending
+            inputRef.current?.focus();
             scrollToBottom();
         } catch (error) {
             console.error("Failed to send message:", error);
@@ -207,15 +307,24 @@ const ChatWindow = () => {
     const handleEmojiClick = (emojiData, event) => {
         setMessage((prev) => prev + emojiData.emoji);
         setEmojisVisible(false);
+        // Return focus to input after picking emoji
+        inputRef.current?.focus();
     };
 
     const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files && e.target.files[0];
         if (!file) return;
+        if (!file.type || !file.type.startsWith("image/")) {
+            toast.error("Only image files are allowed");
+            // reset file input so user can re-select
+            e.target.value = "";
+            inputRef.current?.focus();
+            return;
+        }
         setSending(true);
         try {
             const imageUrl = await uploadAvatar(file);
-            if (!imageUrl) throw new Error();
+            if (!imageUrl) throw new Error("Upload failed");
             const sendedMsg = await send({
                 chatId,
                 imageUrl,
@@ -228,21 +337,37 @@ const ChatWindow = () => {
             socket.emit("send-message", chatId);
 
             scrollToBottom();
+            // Keep focus on input after upload send
+            inputRef.current?.focus();
         } catch (error) {
-            // Optionally show error
             console.log(error);
+        } finally {
+            setSending(false);
+            // clear file input selection after handling
+            if (e?.target) e.target.value = "";
         }
-        setSending(false);
     };
 
-    const handleTyping = () => {
-        if (message === "" && typing) {
+    const handleTyping = (nextVal) => {
+        // reset idle timer on every keystroke
+        if (selfTypingIdleTimerRef.current) {
+            clearTimeout(selfTypingIdleTimerRef.current);
+        }
+        selfTypingIdleTimerRef.current = setTimeout(() => {
+            if (typing) {
+                settyping(false);
+                socket.emit("stop-typing", { typer: user._id, chatId });
+            }
+        }, 7000); //!chage it
+
+        const valueEmpty = (nextVal ?? message) === "";
+        if (valueEmpty && typing) {
             settyping(false);
             socket.emit("stop-typing", {
                 typer: user._id,
                 chatId,
             });
-        } else if (message !== "" && !typing) {
+        } else if (!valueEmpty && !typing) {
             settyping(true);
             socket.emit("typing", {
                 typer: user._id,
@@ -307,6 +432,11 @@ const ChatWindow = () => {
                         No messages yet.
                     </p>
                 )}
+                {otherTyping && (
+                    <TypingIndicator
+                        avatarSrc={currentChatUser?.members?.[0]?.avatar}
+                    />
+                )}
                 <div ref={messagesEndRef} />
             </Box>
 
@@ -322,6 +452,7 @@ const ChatWindow = () => {
                     />
                     <input
                         type="file"
+                        accept="image/*"
                         disabled={sending}
                         onChange={handleImageUpload}
                         hidden
@@ -329,18 +460,19 @@ const ChatWindow = () => {
                 </label>
                 <div className="input-div">
                     <input
+                        ref={inputRef}
                         type="text"
                         placeholder="Type a message..."
                         className="message-input"
                         value={message}
                         onChange={(e) => {
-                            setMessage(e.target.value);
-                            handleTyping();
+                            const v = e.target.value;
+                            setMessage(v);
+                            handleTyping(v);
                         }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !sending) handleSend();
                         }}
-                        disabled={sending}
                     />
                     <button
                         type="button"

@@ -186,9 +186,24 @@ const ChatSideBar = () => {
             }
         });
 
+        const onMessageDeleted = ({ chatId: evtChatId }) => {
+            // When a message is deleted, we can't know the new latest text without messages,
+            // so clear preview optimistically; ChatWindow will sync when opened.
+            setChatList((prev) =>
+                Array.isArray(prev)
+                    ? prev.map((c) =>
+                          c._id === evtChatId ? { ...c, latestMsg: "" } : c
+                      )
+                    : prev
+            );
+        };
+
+        socket.on("message-deleted", onMessageDeleted);
+
         return () => {
             socket.off("new-chat-created");
             socket.off("new-message-notification");
+            socket.off("message-deleted", onMessageDeleted);
         };
     }, [socket, setChatList, setNonFriends]);
 

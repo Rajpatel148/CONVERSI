@@ -256,7 +256,7 @@ export const AuthProvider = ({ children }) => {
 
     // ✅ UPLOAD AVATAR (Cloudinary)
     const uploadAvatar = async (file) => {
-        const id = toast.loading("Uploading avatar...");
+        const id = toast.loading("Uploading image...");
         const formData = new FormData();
         formData.append("file", file);
         formData.append(
@@ -274,10 +274,10 @@ export const AuthProvider = ({ children }) => {
             );
 
             const data = await response.json();
-            toast.success("Avatar uploaded");
+            toast.success("Image uploaded");
             return data.secure_url;
         } catch (error) {
-            toast.error("Avatar upload failed");
+            toast.error("Image upload failed");
             throw error;
         } finally {
             toast.dismiss(id);
