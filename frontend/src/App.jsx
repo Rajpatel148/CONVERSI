@@ -3,6 +3,9 @@ import Dashboard from "./pages/Dashboard";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Error from "./pages/Error.jsx";
 import { Toaster } from "react-hot-toast";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
 const App = () => {
     const router = createBrowserRouter([
         {
@@ -25,9 +28,11 @@ const App = () => {
                 reverseOrder={false}
                 toastOptions={{
                     duration: 2500,
-                    style: { fontSize: "14px" }
+                    style: { fontSize: "14px" },
                 }}
             />
+            <Analytics />
+            <SpeedInsights />
         </>
     );
 };
