@@ -93,15 +93,19 @@
 
 /* Edit Profile Box */
 .profile-edit-box {
-    width: 360px;
-    padding: 18px 20px 22px;
+    width: 100%;
+    max-width: 340px;
+    padding: 18px;
+    margin: 0 auto; /* Center the box horizontally */
 }
 
+/* Title */
 .edit-title {
     text-align: center;
     margin: 6px 0 14px;
 }
 
+/* Avatar Section */
 .edit-avatar-wrap {
     display: flex;
     justify-content: center;
@@ -110,8 +114,8 @@
 
 .edit-avatar {
     position: relative;
-    width: 160px;
-    height: 160px;
+    width: 140px;
+    height: 140px;
     border-radius: 999px;
     background: #f1f1f1;
     overflow: hidden;
@@ -119,6 +123,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: all 0.3s ease;
 }
 
 .edit-avatar img,
@@ -146,17 +151,19 @@
     display: grid;
     place-items: center;
     opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .edit-avatar:hover .avatar-camera {
     opacity: 1;
 }
 
+/* Input Fields */
 .edit-fields {
     margin-top: 18px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
 }
 
 .edit-fields label {
@@ -169,15 +176,19 @@
     padding: 8px 2px;
     outline: none;
     font-size: 0.95rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
+/* Status */
 .status-row {
     display: flex;
     justify-content: space-between;
-    margin-top: 4px;
+    margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid #e7e7e7;
     color: #43a047;
+    flex-wrap: wrap;
 }
 .status-label {
     color: #777;
@@ -186,10 +197,13 @@
     font-weight: 600;
 }
 
+/* Actions */
 .edit-actions {
     display: flex;
+    flex-wrap: wrap-reverse;
     justify-content: space-between;
-    margin-top: 18px;
+    margin-top: 20px;
+    gap: 10px;
 }
 
 .btn {
@@ -199,6 +213,8 @@
     cursor: pointer;
     font-size: 0.95rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    flex: 1 1 auto;
+    text-align: center;
 }
 .btn-primary {
     background: #4caf50;
@@ -210,3 +226,31 @@
 .btn-secondary {
     background: #fff;
 }
+
+/* Media Queries */
+@media (min-width: 480px) {
+    .profile-edit-box{
+        padding: 8px;
+    }
+    .edit-avatar {
+        width: 160px;
+        height: 160px;
+    }
+}
+
+@media (min-width: 768px) {
+    .profile-edit-box {
+        max-width: 480px;
+    }
+
+    .edit-actions {
+        flex-wrap: nowrap;
+        gap: 20px;
+    }
+
+    .btn {
+        flex: none;
+        width: auto;
+    }
+}
+
